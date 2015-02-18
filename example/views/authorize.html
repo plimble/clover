@@ -1,0 +1,14 @@
+<html>
+  <body>
+
+    <form method="post">
+      {% for scope in descScopes %}
+        <p>{{scope.Desc}}</p>
+      {% endfor %}
+
+      <input type="hidden" name="approve" value="approve" />
+      <button type="submit">Approve</button>
+    </form>
+
+  </body>
+</html>
