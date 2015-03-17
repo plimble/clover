@@ -7,7 +7,7 @@ func newRefreshGrant() GrantType {
 	return &refreshGrant{}
 }
 
-func (g *refreshGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *Response) {
+func (g *refreshGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *response) {
 	if tr.RefreshToken == "" {
 		return nil, errRefreshTokenRequired
 	}
@@ -33,7 +33,7 @@ func (g *refreshGrant) GetGrantType() string {
 	return REFRESH_TOKEN
 }
 
-func (g *refreshGrant) CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *Response {
+func (g *refreshGrant) CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *response {
 	if err := a.Config.Store.RemoveRefreshToken(td.GrantData.RefreshToken); err != nil {
 		return errInternal(err.Error())
 	}

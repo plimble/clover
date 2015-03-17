@@ -12,11 +12,11 @@ func newCodeResponseType() *codeResponseType {
 	return &codeResponseType{}
 }
 
-func (rt *codeResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *Response {
+func (rt *codeResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *response {
 	return nil
 }
 
-func (rt *codeResponseType) GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *Response {
+func (rt *codeResponseType) GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *response {
 	code := rt.generateAuthorizationCode()
 	ac := &AuthorizeCode{
 		Code:        code,

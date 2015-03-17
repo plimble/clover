@@ -51,7 +51,7 @@ func (a *AuthorizeServer) ValidateAuthorize(w http.ResponseWriter, r *http.Reque
 	fn(client, scopes)
 }
 
-func (a *AuthorizeServer) handleAuthorize(ar *authorizeRequest, isAuthorized bool) *Response {
+func (a *AuthorizeServer) handleAuthorize(ar *authorizeRequest, isAuthorized bool) *response {
 	//re-validate
 	client, scopes, resp := a.validateAuthorizeRequest(ar)
 	if resp != nil {
@@ -66,8 +66,8 @@ func (a *AuthorizeServer) handleAuthorize(ar *authorizeRequest, isAuthorized boo
 	return a.RespType[ar.responseType].GetAuthorizeResponse(client, scopes, ar, a)
 }
 
-func (a *AuthorizeServer) validateAuthorizeRequest(ar *authorizeRequest) (Client, []string, *Response) {
-	var resp *Response
+func (a *AuthorizeServer) validateAuthorizeRequest(ar *authorizeRequest) (Client, []string, *response) {
+	var resp *response
 	var client Client
 	var scopes []string
 
@@ -96,7 +96,7 @@ func (a *AuthorizeServer) validateAuthorizeRequest(ar *authorizeRequest) (Client
 	return client, scopes, nil
 }
 
-func (a *AuthorizeServer) validateAuthorizeClientID(ar *authorizeRequest) (Client, *Response) {
+func (a *AuthorizeServer) validateAuthorizeClientID(ar *authorizeRequest) (Client, *response) {
 	if ar.clientID == "" {
 		return nil, errNoClientID
 	}
@@ -110,7 +110,7 @@ func (a *AuthorizeServer) validateAuthorizeClientID(ar *authorizeRequest) (Clien
 	return client, nil
 }
 
-func (a *AuthorizeServer) validateAuthorizeState(ar *authorizeRequest) *Response {
+func (a *AuthorizeServer) validateAuthorizeState(ar *authorizeRequest) *response {
 	if a.Config.StateParamRequired && ar.state == "" {
 		return errStateRequired
 	}
@@ -118,7 +118,7 @@ func (a *AuthorizeServer) validateAuthorizeState(ar *authorizeRequest) *Response
 	return nil
 }
 
-func (a *AuthorizeServer) validateAuthorizeRedirectURI(ar *authorizeRequest, client Client) *Response {
+func (a *AuthorizeServer) validateAuthorizeRedirectURI(ar *authorizeRequest, client Client) *response {
 	if ar.redirectURI != "" && client.GetRedirectURI() != "" && client.GetRedirectURI() != ar.redirectURI {
 		return errRedirectMismatch
 	}
@@ -130,7 +130,7 @@ func (a *AuthorizeServer) validateAuthorizeRedirectURI(ar *authorizeRequest, cli
 	return nil
 }
 
-func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, client Client) *Response {
+func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, client Client) *response {
 	switch ar.responseType {
 	case "":
 		return errInvalidRespType
@@ -152,11 +152,11 @@ func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, cl
 	return errCodeUnSupportedGrant
 }
 
-func (a *AuthorizeServer) validateAuthorizeScope(ar *authorizeRequest, client Client) ([]string, *Response) {
+func (a *AuthorizeServer) validateAuthorizeScope(ar *authorizeRequest, client Client) ([]string, *response) {
 	scopes := strings.Fields(ar.scope)
 
 	if len(scopes) > 0 {
-		if len(client.GetScope()) == 0 || !checkScope(scopes, client.GetScope()) {
+		if len(client.GetScope()) == 0 || !checkScope(client.GetScope(), scopes...) {
 			return nil, errUnSupportedScope
 		}
 	} else {

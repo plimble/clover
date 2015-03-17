@@ -15,13 +15,7 @@ const (
 	CODE_REDIRECT          = 302
 )
 
-type ResponseInfo interface {
-	GetResponseType() string
-	GetState() string
-	GetRedirectURI() string
-}
-
-type Response struct {
+type response struct {
 	code        int
 	data        map[string]interface{}
 	inFragment  bool
@@ -30,26 +24,11 @@ type Response struct {
 	header      map[string]string
 }
 
-func (r *Response) IsError() bool {
+func (r *response) IsError() bool {
 	return r.isErr
 }
 
-// func (r *Response) SetRedirect(info ResponseInfo) *Response {
-// 	r.redirectURI = info.GetRedirectURI()
-// 	r.code = 302
-
-// 	if info.GetResponseType() == RESP_TYPE_TOKEN {
-// 		r.inFragment = true
-// 	}
-
-// 	if info.GetState() != "" {
-// 		r.data["state"] = info.GetState()
-// 	}
-
-// 	return r
-// }
-
-func (r *Response) SetRedirect(uri, respType, state string) *Response {
+func (r *response) SetRedirect(uri, respType, state string) *response {
 	r.redirectURI = uri
 	r.code = 302
 
@@ -64,11 +43,11 @@ func (r *Response) SetRedirect(uri, respType, state string) *Response {
 	return r
 }
 
-func (r *Response) SetHeader(header map[string]string) {
+func (r *response) SetHeader(header map[string]string) {
 	r.header = header
 }
 
-func (r *Response) Write(w http.ResponseWriter) {
+func (r *response) Write(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	for k, v := range r.header {
@@ -85,7 +64,7 @@ func (r *Response) Write(w http.ResponseWriter) {
 	encoder.Encode(r.data)
 }
 
-func (r *Response) redirect(w http.ResponseWriter) {
+func (r *response) redirect(w http.ResponseWriter) {
 	u, err := url.Parse(r.redirectURI)
 	if err != nil {
 		errInternal(err.Error()).Write(w)
@@ -111,8 +90,8 @@ func (r *Response) redirect(w http.ResponseWriter) {
 	w.WriteHeader(302)
 }
 
-func NewRespErr(code int, key, desc string) *Response {
-	return &Response{
+func NewRespErr(code int, key, desc string) *response {
+	return &response{
 		code:  code,
 		isErr: true,
 		data: map[string]interface{}{
@@ -122,8 +101,8 @@ func NewRespErr(code int, key, desc string) *Response {
 	}
 }
 
-func NewRespData(data map[string]interface{}) *Response {
-	return &Response{
+func NewRespData(data map[string]interface{}) *response {
+	return &response{
 		code:  200,
 		isErr: false,
 		data:  data,

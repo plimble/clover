@@ -14,8 +14,6 @@ type Store interface {
 	GetAuthorizeCode(code string) (*AuthorizeCode, error)
 
 	GetUser(username, password string) (string, error)
-
-	GetScopes(ids []string) ([]*Scope, error)
 }
 
 type Client interface {
@@ -50,9 +48,4 @@ type AccessToken struct {
 	UserID      string   `json:"user_id" bson:"user_id"`
 	Expires     int64    `json:"expires" bson:"expires"`
 	Scope       []string `json:"scope" bson:"scope"`
-}
-
-type Scope struct {
-	ID   string `json:"id" bson:"_id"`
-	Desc string `json:"desc" bson:"desc"`
 }

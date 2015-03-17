@@ -4,11 +4,7 @@ func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
 	a.Config.DefaultScopes = ids
 }
 
-func (a *AuthorizeServer) GetScopeDescription(ids []string) ([]*Scope, error) {
-	return a.Config.Store.GetScopes(ids)
-}
-
-func checkScope(request, available []string) bool {
+func checkScope(available []string, request ...string) bool {
 	matched := 0
 
 	for i := 0; i < len(request); i++ {

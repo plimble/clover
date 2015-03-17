@@ -126,15 +126,3 @@ func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 
 	return ac, nil
 }
-
-func (s *Storage) GetScopes(ids []string) ([]*clover.Scope, error) {
-	session := s.session.Copy()
-	defer session.Close()
-
-	var scope []*clover.Scope
-	if err := session.DB(s.db).C("oauth_scope").Find(bson.M{"_id": bson.M{"$in": ids}}).All(&scope); err != nil {
-		return nil, errs.Mgo(err)
-	}
-
-	return scope, nil
-}

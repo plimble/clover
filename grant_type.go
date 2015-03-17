@@ -28,9 +28,9 @@ func checkGrantType(grants []string, grant string) bool {
 }
 
 type GrantType interface {
-	Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *Response)
+	Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *response)
 	GetGrantType() string
-	CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *Response
+	CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *response
 }
 
 func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {

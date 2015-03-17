@@ -39,6 +39,6 @@ var (
 	errInsufficientScope        = NewRespErr(403, "insufficient_scope", "The request requires higher privileges than provided by the access token")
 )
 
-func errInternal(desc string) *Response {
+func errInternal(desc string) *response {
 	return NewRespErr(500, "internal", desc)
 }

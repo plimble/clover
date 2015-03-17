@@ -7,7 +7,7 @@ func newAuthCodeGrant() GrantType {
 	return &authCodeGrant{}
 }
 
-func (g *authCodeGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *Response) {
+func (g *authCodeGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *response) {
 	if tr.Code == "" {
 		return nil, errCodeRequired
 	}
@@ -36,6 +36,6 @@ func (g *authCodeGrant) GetGrantType() string {
 	return AUTHORIZATION_CODE
 }
 
-func (g *authCodeGrant) CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *Response {
+func (g *authCodeGrant) CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *response {
 	return respType.GetAccessToken(td, a, true)
 }

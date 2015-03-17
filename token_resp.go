@@ -11,7 +11,7 @@ func newTokenResponseType() *tokenResponseType {
 	return &tokenResponseType{}
 }
 
-func (rt *tokenResponseType) GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *Response {
+func (rt *tokenResponseType) GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *response {
 	at, resp := rt.createAccessToken(client.GetClientID(), client.GetUserID(), scopes, a)
 	if resp != nil {
 		return resp
@@ -31,7 +31,7 @@ func (rt *tokenResponseType) GetAuthorizeResponse(client Client, scopes []string
 	return NewRespData(output).SetRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
-func (rt *tokenResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *Response {
+func (rt *tokenResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *response {
 	at, resp := rt.createAccessToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope, a)
 	if resp != nil {
 		return resp
@@ -58,7 +58,7 @@ func (rt *tokenResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, i
 	return NewRespData(output)
 }
 
-func (rt *tokenResponseType) createAccessToken(clientID, userID string, scope []string, a *AuthorizeServer) (*AccessToken, *Response) {
+func (rt *tokenResponseType) createAccessToken(clientID, userID string, scope []string, a *AuthorizeServer) (*AccessToken, *response) {
 	token := unik.NewUUID1Base64().Generate()
 
 	at := &AccessToken{
@@ -76,7 +76,7 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scope []
 	return at, nil
 }
 
-func (rt *tokenResponseType) createRefreshToken(at *AccessToken, a *AuthorizeServer) (*RefreshToken, *Response) {
+func (rt *tokenResponseType) createRefreshToken(at *AccessToken, a *AuthorizeServer) (*RefreshToken, *response) {
 	if a.Config.RefreshTokenLifetime < 1 {
 		return nil, nil
 	}

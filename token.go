@@ -1,6 +1,7 @@
 package clover
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 )
@@ -40,7 +41,7 @@ func (a *AuthorizeServer) Token(w http.ResponseWriter, r *http.Request) {
 	resp.Write(w)
 }
 
-func parseTokenRequest(r *http.Request, a *AuthorizeServer) (*TokenRequest, *Response) {
+func parseTokenRequest(r *http.Request, a *AuthorizeServer) (*TokenRequest, *response) {
 	clientID, clientSecret, resp := getCredentialsFromHttp(r, a.Config)
 	if resp != nil {
 		return nil, resp
@@ -62,7 +63,7 @@ func parseTokenRequest(r *http.Request, a *AuthorizeServer) (*TokenRequest, *Res
 	return tr, nil
 }
 
-func (a *AuthorizeServer) handleAccessToken(tr *TokenRequest) *Response {
+func (a *AuthorizeServer) handleAccessToken(tr *TokenRequest) *response {
 	td := &TokenData{}
 	if resp := a.validateAccessToken(tr, td); resp != nil {
 		return resp
@@ -71,8 +72,8 @@ func (a *AuthorizeServer) handleAccessToken(tr *TokenRequest) *Response {
 	return td.GrantType.CreateAccessToken(td, a, a.RespType[RESP_TYPE_TOKEN])
 }
 
-func (a *AuthorizeServer) validateAccessToken(tr *TokenRequest, td *TokenData) *Response {
-	var resp *Response
+func (a *AuthorizeServer) validateAccessToken(tr *TokenRequest, td *TokenData) *response {
+	var resp *response
 	if td.GrantType, resp = a.validateAccessTokenGrantType(tr); resp != nil {
 		return resp
 	}
@@ -98,7 +99,7 @@ func (a *AuthorizeServer) validateAccessToken(tr *TokenRequest, td *TokenData) *
 	return nil
 }
 
-func (a *AuthorizeServer) validateAccessTokenGrantType(tr *TokenRequest) (GrantType, *Response) {
+func (a *AuthorizeServer) validateAccessTokenGrantType(tr *TokenRequest) (GrantType, *response) {
 	if tr.GrantType == "" {
 		return nil, errGrantTypeRequired
 	}
@@ -110,7 +111,7 @@ func (a *AuthorizeServer) validateAccessTokenGrantType(tr *TokenRequest) (GrantT
 	return a.Grant[tr.GrantType], nil
 }
 
-func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData *GrantData) *Response {
+func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData *GrantData) *response {
 	var err error
 	client, err := a.Config.Store.GetClient(grantData.ClientID)
 	if err != nil {
@@ -126,11 +127,11 @@ func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData 
 	return nil
 }
 
-func (a *AuthorizeServer) validateAccessTokenScope(tr *TokenRequest, grantData *GrantData) ([]string, *Response) {
+func (a *AuthorizeServer) validateAccessTokenScope(tr *TokenRequest, grantData *GrantData) ([]string, *response) {
 	scopes := strings.Fields(tr.Scope)
 	if len(scopes) > 0 {
 		if len(grantData.Scope) > 0 {
-			if !checkScope(scopes, grantData.Scope) {
+			if !checkScope(grantData.Scope, scopes...) {
 				return nil, errInvalidScopeRequest
 			}
 		} else {
@@ -165,4 +166,36 @@ func copyClientToGrant(grantData *GrantData, client Client) {
 	if len(grantData.GrantType) == 0 {
 		grantData.GrantType = client.GetGrantType()
 	}
+}
+
+func getCredentialsFromHttp(r *http.Request, config *Config) (string, string, *response) {
+	headerAuth := r.Header.Get("Authorization")
+
+	switch {
+	case headerAuth != "":
+		s := strings.SplitN(headerAuth, " ", 2)
+		if len(s) != 2 || s[0] != "Basic" {
+			return "", "", errInvalidAuthHeader
+		}
+
+		b, err := base64.StdEncoding.DecodeString(s[1])
+		if err != nil {
+			return "", "", errInternal(err.Error())
+		}
+
+		pair := strings.SplitN(string(b), ":", 2)
+		if len(pair) != 2 {
+			return "", "", errInvalidAuthMSG
+		}
+
+		return pair[0], pair[1], nil
+	case config.AllowCredentialsBody:
+		if r.PostForm.Get(`client_id`) == "" || r.PostForm.Get(`client_secret`) == "" {
+			return "", "", errCredentailsNotInBody
+		}
+
+		return r.PostForm.Get("client_id"), r.PostForm.Get("client_secret"), nil
+	}
+
+	return "", "", errCredentailsRequired
 }
