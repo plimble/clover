@@ -19,7 +19,7 @@ func isExpireUnix(expires int64) bool {
 	return time.Now().UTC().Truncate(time.Nanosecond).Unix() > expires
 }
 
-func getCredentialsFromHttp(r *http.Request, config *Config) (string, string, *Response) {
+func getCredentialsFromHttp(r *http.Request, config *AuthorizeConfig) (string, string, *Response) {
 	headerAuth := r.Header.Get("Authorization")
 
 	switch {

@@ -12,22 +12,22 @@ func newCodeResponseType() *codeResponseType {
 	return &codeResponseType{}
 }
 
-func (rt *codeResponseType) GetAccessToken(td *TokenData, c *Clover, includeRefresh bool) *Response {
+func (rt *codeResponseType) GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *Response {
 	return nil
 }
 
-func (rt *codeResponseType) GetAuthorizeResponse(ad *AuthorizeData, c *Clover) *Response {
+func (rt *codeResponseType) GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *Response {
 	code := rt.generateAuthorizationCode()
 	ac := &AuthorizeCode{
 		Code:        code,
-		ClientID:    ad.Client.ClientID,
-		UserID:      ad.Client.UserID,
-		Expires:     addSecondUnix(c.Config.AuthCodeLifetime),
-		Scope:       ad.Scope,
-		RedirectURI: ad.RedirectURI,
+		ClientID:    client.GetClientID(),
+		UserID:      client.GetUserID(),
+		Expires:     addSecondUnix(a.Config.AuthCodeLifetime),
+		Scope:       scopes,
+		RedirectURI: ar.redirectURI,
 	}
 
-	if err := c.Config.Store.SetAuthorizeCode(ac); err != nil {
+	if err := a.Config.Store.SetAuthorizeCode(ac); err != nil {
 		return errInternal(err.Error())
 	}
 
@@ -35,11 +35,11 @@ func (rt *codeResponseType) GetAuthorizeResponse(ad *AuthorizeData, c *Clover) *
 		"code": code,
 	}
 
-	if ad.State != "" {
-		output["state"] = ad.State
+	if ar.state != "" {
+		output["state"] = ar.state
 	}
 
-	return NewRespData(output).SetRedirect(ad)
+	return NewRespData(output).SetRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
 func (rt *codeResponseType) generateAuthorizationCode() string {

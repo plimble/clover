@@ -25,7 +25,6 @@ var (
 	errGrantTypeRequired        = NewRespErr(400, "invalid_request", "The grant type was not specified in the request")
 	errUnSupportedGrantType     = NewRespErr(400, "unsupported_grant_type", "Grant type not supported")
 	errInvalidScopeRequest      = NewRespErr(400, "invalid_scope", "The scope requested is invalid for this request")
-	errInvalidScopeClient       = NewRespErr(400, "invalid_scope", "The scope requested is invalid for this client")
 	errUsernamePasswordRequired = NewRespErr(400, "invalid_request", "Username and password are required")
 	errInvalidClientCredentail  = NewRespErr(400, "invalid_grant", "Invalid Client credential")
 	errRefreshTokenRequired     = NewRespErr(400, "invalid_request", "Missing parameter: refresh_token is required")

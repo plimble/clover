@@ -6,14 +6,22 @@ import (
 	"strings"
 )
 
-func (c *Clover) VerifyResourceRequest(w http.ResponseWriter, r *http.Request, scope ...string) *AccessToken {
+type ResourceServer struct {
+	store Store
+}
+
+func NewResourceServer(store Store) *ResourceServer {
+	return &ResourceServer{store}
+}
+
+func (s *ResourceServer) VerifyResourceRequest(w http.ResponseWriter, r *http.Request, scope ...string) *AccessToken {
 	token, resp := getTokenFromHttp(r)
 	if resp != nil {
 		resp.Write(w)
 		return nil
 	}
 
-	at, err := c.Config.Store.GetAccessToken(token)
+	at, err := s.store.GetAccessToken(token)
 	if err != nil {
 		errInvalidAccessToken.Write(w)
 		return nil

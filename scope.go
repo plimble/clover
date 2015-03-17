@@ -1,11 +1,11 @@
 package clover
 
-func (c *Clover) SetDefaultScopes(ids ...string) {
-	c.Config.DefaultScopes = ids
+func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
+	a.Config.DefaultScopes = ids
 }
 
-func (c *Clover) GetScopeDescription(ids []string) ([]*Scope, error) {
-	return c.Config.Store.GetScopes(ids)
+func (a *AuthorizeServer) GetScopeDescription(ids []string) ([]*Scope, error) {
+	return a.Config.Store.GetScopes(ids)
 }
 
 func checkScope(request, available []string) bool {
@@ -24,20 +24,4 @@ func checkScope(request, available []string) bool {
 	}
 
 	return true
-}
-
-func isScopeDiff(request, available []string) bool {
-	vals := map[string]struct{}{}
-
-	for _, x := range available {
-		vals[x] = struct{}{}
-	}
-
-	for _, x := range request {
-		if _, ok := vals[x]; !ok {
-			return true
-		}
-	}
-
-	return false
 }

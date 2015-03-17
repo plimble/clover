@@ -34,16 +34,31 @@ func (r *Response) IsError() bool {
 	return r.isErr
 }
 
-func (r *Response) SetRedirect(info ResponseInfo) *Response {
-	r.redirectURI = info.GetRedirectURI()
+// func (r *Response) SetRedirect(info ResponseInfo) *Response {
+// 	r.redirectURI = info.GetRedirectURI()
+// 	r.code = 302
+
+// 	if info.GetResponseType() == RESP_TYPE_TOKEN {
+// 		r.inFragment = true
+// 	}
+
+// 	if info.GetState() != "" {
+// 		r.data["state"] = info.GetState()
+// 	}
+
+// 	return r
+// }
+
+func (r *Response) SetRedirect(uri, respType, state string) *Response {
+	r.redirectURI = uri
 	r.code = 302
 
-	if info.GetResponseType() == RESP_TYPE_TOKEN {
+	if respType == RESP_TYPE_TOKEN {
 		r.inFragment = true
 	}
 
-	if info.GetState() != "" {
-		r.data["state"] = info.GetState()
+	if state != "" {
+		r.data["state"] = state
 	}
 
 	return r
