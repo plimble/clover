@@ -1,6 +1,6 @@
 package clover
 
-type AuthorizeConfig struct {
+type Config struct {
 	//Store
 	Store                Store
 	AccessLifeTime       int
@@ -16,19 +16,21 @@ type AuthorizeConfig struct {
 }
 
 type AuthorizeServer struct {
-	Config   *AuthorizeConfig
+	Config   *Config
 	RespType map[string]ResponseType
 	Grant    map[string]GrantType
 }
 
-func NewAuthorizeServer(config *AuthorizeConfig) *AuthorizeServer {
-	a := &AuthorizeServer{}
-	a.Config = config
-	a.RespType = map[string]ResponseType{
-		RESP_TYPE_TOKEN: newTokenResponseType(),
-		RESP_TYPE_CODE:  newCodeResponseType(),
+func NewAuthorizeServer(config *Config) *AuthorizeServer {
+	if config.Store == nil {
+		panic("store should not be nil")
 	}
-	a.Grant = make(map[string]GrantType)
 
-	return a
+	return &AuthorizeServer{
+		Config: config,
+		RespType: map[string]ResponseType{
+			RESP_TYPE_TOKEN: newTokenResponseType(),
+		},
+		Grant: make(map[string]GrantType),
+	}
 }

@@ -35,6 +35,7 @@ type GrantType interface {
 
 func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {
 	a.Grant[key] = grant
+	a.RespType[RESP_TYPE_CODE] = newCodeResponseType()
 }
 
 func (a *AuthorizeServer) RegisterAuthCodeGrant() {

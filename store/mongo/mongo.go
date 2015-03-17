@@ -15,8 +15,8 @@ type Storage struct {
 
 type GetUserFunc func(session *mgo.Session, username, password string) (string, error)
 
-func New(session *mgo.Session, db string) *Storage {
-	return &Storage{session, db, nil}
+func New(session *mgo.Session, db string, getUserFn GetUserFunc) *Storage {
+	return &Storage{session, db, getUserFn}
 }
 
 func (s *Storage) TruncateAll() {
@@ -127,18 +127,6 @@ func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 	return ac, nil
 }
 
-func (s *Storage) SetScope(id, desc string) error {
-	session := s.session.Copy()
-	session.SetSafe(nil)
-	defer session.Close()
-
-	if err := session.DB(s.db).C("oauth_scope").Insert(clover.Scope{id, desc}); err != nil {
-		return errs.Mgo(err)
-	}
-
-	return nil
-}
-
 func (s *Storage) GetScopes(ids []string) ([]*clover.Scope, error) {
 	session := s.session.Copy()
 	defer session.Close()
@@ -149,23 +137,4 @@ func (s *Storage) GetScopes(ids []string) ([]*clover.Scope, error) {
 	}
 
 	return scope, nil
-}
-
-func (s *Storage) GetAllScopeID() ([]string, error) {
-	session := s.session.Copy()
-	defer session.Close()
-
-	var scopeID []string
-	var scope *clover.Scope
-
-	iter := session.DB(s.db).C("oauth_scope").Find(nil).Select(bson.M{"_id": 1}).Iter()
-	for iter.Next(&scope) {
-		scopeID = append(scopeID, scope.ID)
-	}
-
-	if err := iter.Close(); err != nil {
-		return nil, err
-	}
-
-	return scopeID, nil
 }
