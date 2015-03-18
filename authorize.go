@@ -118,13 +118,18 @@ func (a *AuthorizeServer) validateAuthorizeState(ar *authorizeRequest) *response
 	return nil
 }
 
+// Make sure a valid redirect_uri was supplied. If specified, it must match the clientData URI.
 func (a *AuthorizeServer) validateAuthorizeRedirectURI(ar *authorizeRequest, client Client) *response {
-	if ar.redirectURI != "" && client.GetRedirectURI() != "" && client.GetRedirectURI() != ar.redirectURI {
-		return errRedirectMismatch
+	if ar.redirectURI == "" {
+		if client.GetRedirectURI() == "" {
+			return errNoRedirectURI
+		}
+		ar.redirectURI = client.GetRedirectURI()
+		return nil
 	}
 
-	if ar.redirectURI == "" && client.GetRedirectURI() == "" {
-		return errNoRedirectURI
+	if ar.redirectURI != "" && client.GetRedirectURI() != "" && client.GetRedirectURI() != ar.redirectURI {
+		return errRedirectMismatch
 	}
 
 	return nil
@@ -143,6 +148,7 @@ func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, cl
 		if !a.Config.AllowImplicit {
 			return errUnSupportedImplicit
 		}
+
 		if !checkGrantType(client.GetGrantType(), IMPLICIT) {
 			return errUnAuthorizedGrant
 		}

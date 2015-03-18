@@ -34,3 +34,14 @@ func NewAuthorizeServer(config *Config) *AuthorizeServer {
 		Grant: make(map[string]GrantType),
 	}
 }
+
+func DefaultConfig() *Config {
+	return &Config{
+		AccessLifeTime:       3600,
+		AuthCodeLifetime:     60,
+		RefreshTokenLifetime: 3600,
+		AllowCredentialsBody: false,
+		AllowImplicit:        false,
+		StateParamRequired:   false,
+	}
+}

@@ -113,12 +113,12 @@ func (a *AuthorizeServer) validateAccessTokenGrantType(tr *TokenRequest) (GrantT
 
 func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData *GrantData) *response {
 	var err error
-	client, err := a.Config.Store.GetClient(grantData.ClientID)
+	client, err := a.Config.Store.GetClient(tr.ClientID)
 	if err != nil {
 		return errInternal(err.Error())
 	}
 
-	if client.GetClientID() != "" && grantData.ClientID != client.GetClientID() {
+	if grantData.ClientID != "" && grantData.ClientID != client.GetClientID() {
 		return errInvalidClientCredentail
 	}
 

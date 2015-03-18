@@ -35,11 +35,11 @@ type GrantType interface {
 
 func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {
 	a.Grant[key] = grant
-	a.RespType[RESP_TYPE_CODE] = newCodeResponseType()
 }
 
 func (a *AuthorizeServer) RegisterAuthCodeGrant() {
 	a.Grant[AUTHORIZATION_CODE] = newAuthCodeGrant()
+	a.RespType[RESP_TYPE_CODE] = newCodeResponseType()
 }
 
 func (a *AuthorizeServer) RegisterClientGrant() {
@@ -52,4 +52,8 @@ func (a *AuthorizeServer) RegisterPasswordGrant() {
 
 func (a *AuthorizeServer) RegisterRefreshGrant() {
 	a.Grant[CLIENT_CREDENTIALS] = newClientGrant()
+}
+
+func (a *AuthorizeServer) RegisterImplicitGrant() {
+	a.Grant[IMPLICIT] = newAuthCodeGrant()
 }

@@ -2,21 +2,33 @@ package mongo
 
 import (
 	"github.com/plimble/clover"
-	"github.com/plimble/errs"
+	"github.com/plimble/utils/errors2/errmgo"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type Storage struct {
-	session     *mgo.Session
-	db          string
-	GetUserFunc GetUserFunc
+	session       *mgo.Session
+	db            string
+	getUserFunc   GetUserFunc
+	getClientFunc GetClientFunc
 }
 
-type GetUserFunc func(session *mgo.Session, username, password string) (string, error)
+type GetUserFunc func(username, password string) (string, error)
+type GetClientFunc func(clientID string) (clover.Client, error)
 
-func New(session *mgo.Session, db string, getUserFn GetUserFunc) *Storage {
-	return &Storage{session, db, getUserFn}
+func New(session *mgo.Session, db string) *Storage {
+	return &Storage{
+		session: session,
+		db:      db,
+	}
+}
+
+func (s *Storage) RegisterGetUserFunc(fn GetUserFunc) {
+	s.getUserFunc = fn
+}
+
+func (s *Storage) RegisterGetClientFunc(fn GetClientFunc) {
+	s.getClientFunc = fn
 }
 
 func (s *Storage) TruncateAll() {
@@ -29,23 +41,29 @@ func (s *Storage) GetUser(username, password string) (string, error) {
 	session := s.session.Copy()
 	defer session.Close()
 
-	if s.GetUser == nil {
+	if s.getUserFunc == nil {
 		panic("Not implement GetUserFunc")
 	}
 
-	return s.GetUserFunc(session, username, password)
+	id, err := s.getUserFunc(username, password)
+	return id, errmgo.Err(err)
 }
 
-func (s *Storage) GetClient(cid string) (*clover.Client, error) {
+func (s *Storage) GetClient(cid string) (clover.Client, error) {
 	session := s.session.Copy()
 	defer session.Close()
 
-	var c clover.Client
-	if err := session.DB(s.db).C("oauth_client").FindId(cid).One(&c); err != nil {
-		return nil, errs.Mgo(err)
+	if s.getClientFunc == nil {
+		panic("Not implement GetClientFunc")
 	}
 
-	return &c, nil
+	client, err := s.getClientFunc(cid)
+	return client, errmgo.Err(err)
+
+	// var c clover.DefaultClient
+	// if err := session.DB(s.db).C("oauth_client").FindId(cid).One(&c); err != nil {
+	// 	return nil, errmgo.Err(err)
+	// }
 }
 
 func (s *Storage) SetAccessToken(at *clover.AccessToken) error {
@@ -54,7 +72,7 @@ func (s *Storage) SetAccessToken(at *clover.AccessToken) error {
 	defer session.Close()
 
 	if err := session.DB(s.db).C("oauth_access_token").Insert(at); err != nil {
-		return errs.Mgo(err)
+		return errmgo.Err(err)
 	}
 
 	return nil
@@ -66,7 +84,7 @@ func (s *Storage) GetAccessToken(at string) (*clover.AccessToken, error) {
 
 	var a *clover.AccessToken
 	if err := session.DB(s.db).C("oauth_access_token").FindId(at).One(&a); err != nil {
-		return nil, errs.Mgo(err)
+		return nil, errmgo.Err(err)
 	}
 
 	return a, nil
@@ -78,7 +96,7 @@ func (s *Storage) SetRefreshToken(rt *clover.RefreshToken) error {
 	defer session.Close()
 
 	if err := session.DB(s.db).C("oauth_refresh_token").Insert(rt); err != nil {
-		return errs.Mgo(err)
+		return errmgo.Err(err)
 	}
 
 	return nil
@@ -90,7 +108,7 @@ func (s *Storage) GetRefreshToken(rt string) (*clover.RefreshToken, error) {
 
 	var r *clover.RefreshToken
 	if err := session.DB(s.db).C("oauth_refresh_token").FindId(rt).One(&r); err != nil {
-		return nil, errs.Mgo(err)
+		return nil, errmgo.Err(err)
 	}
 
 	return r, nil
@@ -100,7 +118,7 @@ func (s *Storage) RemoveRefreshToken(rt string) error {
 	session := s.session.Copy()
 	defer session.Close()
 
-	return errs.Mgo(session.DB(s.db).C("oauth_refresh_token").RemoveId(rt))
+	return errmgo.Err(session.DB(s.db).C("oauth_refresh_token").RemoveId(rt))
 }
 
 func (s *Storage) SetAuthorizeCode(ac *clover.AuthorizeCode) error {
@@ -109,7 +127,7 @@ func (s *Storage) SetAuthorizeCode(ac *clover.AuthorizeCode) error {
 	defer session.Close()
 
 	if err := session.DB(s.db).C("oauth_auth_code").Insert(ac); err != nil {
-		return errs.Mgo(err)
+		return errmgo.Err(err)
 	}
 
 	return nil
@@ -121,7 +139,7 @@ func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 
 	var ac *clover.AuthorizeCode
 	if err := session.DB(s.db).C("oauth_auth_code").FindId(code).One(&ac); err != nil {
-		return nil, errs.Mgo(err)
+		return nil, errmgo.Err(err)
 	}
 
 	return ac, nil

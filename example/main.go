@@ -10,26 +10,39 @@ import (
 	"net/url"
 )
 
-func setUpStore() clover.Store {
-	session, err := mgo.Dial("localhost:27017")
-	if err != nil {
-		panic(err)
-	}
-
-	session.DB("oauth").C("oauth_client").UpsertId("1001", clover.Client{
+func setupStore(session *mgo.Session) clover.Store {
+	session.DB("oauth").C("oauth_client").UpsertId("1001", clover.DefaultClient{
 		ClientID:     "1001",
 		ClientSecret: "xyz",
-		GrantType:    []string{clover.AUTHORIZATION_CODE, clover.PASSWORD, clover.CLIENT_CREDENTIALS, clover.REFRESH_TOKEN},
+		GrantType:    []string{clover.AUTHORIZATION_CODE, clover.PASSWORD, clover.CLIENT_CREDENTIALS, clover.REFRESH_TOKEN, clover.IMPLICIT},
 		UserID:       "1",
 		Scope:        []string{"read_my_timeline", "read_my_friend"},
 		RedirectURI:  "http://localhost:4000/callback",
 	})
 
-	session.DB("oauth").C("oauth_scope").UpsertId("post_my_wall", clover.Scope{"post_my_wall", "Can post my wall"})
-	session.DB("oauth").C("oauth_scope").UpsertId("read_my_timeline", clover.Scope{"read_my_timeline", "Can read my timeline"})
-	session.DB("oauth").C("oauth_scope").UpsertId("read_my_friend", clover.Scope{"read_my_friend", "Can read my friend"})
+	db := "oauth"
+	m := mongo.New(session, db)
+	m.RegisterGetClientFunc(getClient(session, db))
+	m.RegisterGetUserFunc(getUser(session, db))
+	return m
+}
 
-	return mongo.New(session, "oauth")
+func getUser(session *mgo.Session, db string) mongo.GetUserFunc {
+	return func(username, password string) (string, error) {
+		return "1", nil
+	}
+
+}
+
+func getClient(session *mgo.Session, db string) mongo.GetClientFunc {
+	return func(clientID string) (clover.Client, error) {
+		var c clover.DefaultClient
+		if err := session.DB(db).C("oauth_client").FindId(clientID).One(&c); err != nil {
+			return nil, err
+		}
+
+		return &c, nil
+	}
 }
 
 func isLogin(c *ace.C) {
@@ -42,71 +55,47 @@ func isLogin(c *ace.C) {
 }
 
 func main() {
+	session, err := mgo.Dial("172.17.8.101:27017")
+	if err != nil {
+		panic(err)
+	}
 
+	store := setupStore(session)
 	config := clover.DefaultConfig()
-	config.Store = setUpStore()
-	config.Grants = []string{clover.CLIENT_CREDENTIALS, clover.PASSWORD, clover.AUTHORIZATION_CODE, clover.REFRESH_TOKEN}
+	config.Store = store
 	config.AllowImplicit = true
-	cv := clover.New(config)
-	cv.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	auth := clover.NewAuthorizeServer(config)
+	auth.RegisterClientGrant()
+	auth.RegisterPasswordGrant()
+	auth.RegisterRefreshGrant()
+	auth.RegisterAuthCodeGrant()
+	auth.RegisterImplicitGrant()
+	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
+
+	resource := clover.NewResourceServer(store)
+
+	app := &App{
+		auth:     auth,
+		resource: resource,
+	}
 
 	a := ace.New()
-	a.UseHtmlTemplate(pongo2.Pongo2(&pongo2.TemplateOptions{
+
+	a.HtmlTemplate(pongo2.Pongo2(&pongo2.TemplateOptions{
 		Directory: "views",
 	}))
 
 	cookie := sessions.NewCookieStore([]byte("secret"))
-	a.UseSession("clover", cookie, nil)
+	a.Session("clover", cookie, nil)
 
-	a.GET("/oauth", isLogin, func(c *ace.C) {
-		ar := cv.ValidateAuthorize(c.Writer, c.Request)
-		//if validate failed
-		if ar == nil {
-			return
-		}
-
-		//go to dialog page
-		descScopes, err := cv.GetScopeDescription(ar.Scope)
-		if err != nil {
-			c.String(500, err.Error())
-			return
-		}
-
-		c.HTML("authorize.html", map[string]interface{}{
-			"auth":       ar,
-			"descScopes": descScopes,
-		})
-	})
-
-	a.POST("/oauth", isLogin, func(c *ace.C) {
-		approve := c.Request.FormValue("approve")
-		cv.Authorize(c.Writer, c.Request, approve == "approve")
-	})
-
-	a.GET("/signin", func(c *ace.C) {
-		c.HTML("signin.html", nil)
-	})
-
-	a.POST("/signin", func(c *ace.C) {
-		username := c.Request.FormValue("username")
-		password := c.Request.FormValue("password")
-		c.Session.SetString("username", username)
-		c.Session.SetString("password", password)
-
-		c.Redirect(c.Request.FormValue("next"))
-	})
-
-	a.POST("/token", func(c *ace.C) {
-		cv.Token(c.Writer, c.Request)
-	})
-
-	a.GET("/callback", func(c *ace.C) {
-		if c.Request.FormValue("err") != "" {
-			c.String(500, "%s %s", c.Request.FormValue("err"), c.Request.FormValue("desc"))
-		} else {
-			c.String(200, c.Request.FormValue("code"))
-		}
-	})
+	//http://localhost:4000/oauth?client_id=1001&response_type=code
+	a.GET("/oauth", isLogin, app.grantScreen)
+	a.POST("/oauth", isLogin, app.grant)
+	a.GET("/signin", app.signinScreen)
+	a.POST("/signin", app.signin)
+	a.POST("/token", app.token)
+	a.GET("/callback", app.callback)
+	a.GET("/home", isLogin, app.home)
 
 	a.Run(":4000")
 }

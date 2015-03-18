@@ -52,7 +52,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 
 func (s *ResourceServer) responseError(resp *response, scopes []string, w http.ResponseWriter) {
 	resp.SetHeader(map[string]string{
-		"WWW-Authenticate": fmt.Sprintf(`%s realm="%s", scope="%s", error="%s", error_description="%s`,
+		"WWW-Authenticate": fmt.Sprintf(`%s realm="%s", scope="%s", error="%s", error_description="%s"`,
 			"Bearer", "Service", strings.Join(scopes, " "), resp.data["error"], resp.data["error_description"],
 		),
 	})
