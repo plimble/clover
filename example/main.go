@@ -28,8 +28,8 @@ func setupStore(session *mgo.Session) clover.Store {
 }
 
 func getUser(session *mgo.Session, db string) mongo.GetUserFunc {
-	return func(username, password string) (string, error) {
-		return "1", nil
+	return func(username, password string) (string, []string, error) {
+		return "1", nil, nil
 	}
 
 }

@@ -37,6 +37,7 @@ var (
 	errInvalidAccessToken       = NewRespErr(400, "invalid_token", "The access token provided is invalid")
 	errAccessTokenExpired       = NewRespErr(400, "expired_token", "The access token provided has expired")
 	errInsufficientScope        = NewRespErr(403, "insufficient_scope", "The request requires higher privileges than provided by the access token")
+	errInvalidUsernamePAssword  = NewRespErr(403, "invalid_grant", "Invalid username and password combination")
 )
 
 func errInternal(desc string) *response {

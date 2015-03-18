@@ -14,11 +14,15 @@ type User struct {
 	Password string `json:"password"`
 }
 
+type GetUserFunc func(username, password string) (string, []string, error)
+type GetClientFunc func(clientID string) (clover.Client, error)
+
 type Storage struct {
 	Client      map[string]*clover.DefaultClient
 	Refresh     map[string]*clover.RefreshToken
 	AuthCode    map[string]*clover.AuthorizeCode
 	AccessToken map[string]*clover.AccessToken
+	User        map[string]*User
 }
 
 func New() *Storage {
@@ -92,6 +96,15 @@ func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 	return authcode, nil
 }
 
-func (s *Storage) GetUser(username, password string) (string, error) {
-	return "1", nil
+func (s *Storage) GetUser(username, password string) (string, []string, error) {
+	user, ok := s.User[username]
+	if !ok {
+		return "", nil, errNotFound
+	}
+
+	if password != user.Password {
+		return "", nil, errors.New("invalid username or password")
+	}
+
+	return user.Username, nil, nil
 }

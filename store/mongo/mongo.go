@@ -13,7 +13,7 @@ type Storage struct {
 	getClientFunc GetClientFunc
 }
 
-type GetUserFunc func(username, password string) (string, error)
+type GetUserFunc func(username, password string) (string, []string, error)
 type GetClientFunc func(clientID string) (clover.Client, error)
 
 func New(session *mgo.Session, db string) *Storage {
@@ -37,7 +37,7 @@ func (s *Storage) TruncateAll() {
 	// session.DB(s.db).C("activity").RemoveAll(nil)
 }
 
-func (s *Storage) GetUser(username, password string) (string, error) {
+func (s *Storage) GetUser(username, password string) (string, []string, error) {
 	session := s.session.Copy()
 	defer session.Close()
 
@@ -45,8 +45,8 @@ func (s *Storage) GetUser(username, password string) (string, error) {
 		panic("Not implement GetUserFunc")
 	}
 
-	id, err := s.getUserFunc(username, password)
-	return id, errmgo.Err(err)
+	id, scopes, err := s.getUserFunc(username, password)
+	return id, scopes, errmgo.Err(err)
 }
 
 func (s *Storage) GetClient(cid string) (clover.Client, error) {

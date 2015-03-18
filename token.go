@@ -130,14 +130,14 @@ func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData 
 func (a *AuthorizeServer) validateAccessTokenScope(tr *TokenRequest, grantData *GrantData) ([]string, *response) {
 	scopes := strings.Fields(tr.Scope)
 	if len(scopes) > 0 {
-		if len(grantData.Scope) > 0 {
+		if grantData.Scope != nil && len(grantData.Scope) > 0 {
 			if !checkScope(grantData.Scope, scopes...) {
 				return nil, errInvalidScopeRequest
 			}
 		} else {
 			return nil, errNoScope
 		}
-	} else if len(grantData.Scope) > 0 {
+	} else if grantData.Scope != nil && len(grantData.Scope) > 0 {
 		scopes = grantData.Scope
 	} else {
 		if len(a.Config.DefaultScopes) == 0 {

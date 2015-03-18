@@ -13,13 +13,7 @@ type Store interface {
 	SetAuthorizeCode(ac *AuthorizeCode) error
 	GetAuthorizeCode(code string) (*AuthorizeCode, error)
 
-	GetUser(username, password string) (string, error)
-}
-
-type User interface {
-	GetUserID() string
-	GetUsername() string
-	GetPassword() string
+	GetUser(username, password string) (string, []string, error)
 }
 
 type Client interface {

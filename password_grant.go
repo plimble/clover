@@ -12,15 +12,15 @@ func (g *passwordGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantDa
 		return nil, errUsernamePasswordRequired
 	}
 
-	uid, err := a.Config.Store.GetUser(tr.Username, tr.Password)
+	uid, scopes, err := a.Config.Store.GetUser(tr.Username, tr.Password)
 	if err != nil {
-		return nil, errInternal(err.Error())
+		return nil, errInvalidUsernamePAssword
 	}
 
 	return &GrantData{
 		ClientID: "",
 		UserID:   uid,
-		Scope:    []string{},
+		Scope:    scopes,
 	}, nil
 }
 
