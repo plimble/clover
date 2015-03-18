@@ -16,6 +16,12 @@ type Store interface {
 	GetUser(username, password string) (string, error)
 }
 
+type User interface {
+	GetUserID() string
+	GetUsername() string
+	GetPassword() string
+}
+
 type Client interface {
 	GetClientID() string
 	GetClientSecret() string
