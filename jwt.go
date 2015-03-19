@@ -18,7 +18,7 @@ func getJWTAlgorithm(algo string) jwt.SigningMethod {
 	switch algo {
 	case JWT_ALGO_HS256:
 		return jwt.SigningMethodHS256
-	case JWT_ALGO_RS384:
+	case JWT_ALGO_HS384:
 		return jwt.SigningMethodHS384
 	case JWT_ALGO_HS512:
 		return jwt.SigningMethodHS512

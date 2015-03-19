@@ -14,7 +14,9 @@ type ResourceServer struct {
 }
 
 func NewResourceServer(store TokenStore) *ResourceServer {
-	return &ResourceServer{store}
+	return &ResourceServer{
+		store: store,
+	}
 }
 
 func (s *ResourceServer) UseJWTAccessTokens(store PublicKeyStore) {
