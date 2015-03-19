@@ -59,7 +59,7 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes [
 }
 
 func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh bool) (string, *response) {
-	if includeRefresh || rt.config.RefreshTokenLifetime < 1 {
+	if !includeRefresh || rt.config.RefreshTokenLifetime < 1 {
 		return "", nil
 	}
 
