@@ -69,7 +69,7 @@ func (a *AuthorizeServer) handleAccessToken(tr *TokenRequest) *response {
 		return resp
 	}
 
-	return td.GrantType.CreateAccessToken(td, a, a.RespType[RESP_TYPE_TOKEN])
+	return td.GrantType.CreateAccessToken(td, a.tokenRespType)
 }
 
 func (a *AuthorizeServer) validateAccessToken(tr *TokenRequest, td *TokenData) *response {
@@ -78,7 +78,7 @@ func (a *AuthorizeServer) validateAccessToken(tr *TokenRequest, td *TokenData) *
 		return resp
 	}
 
-	if td.GrantData, resp = td.GrantType.Validate(tr, a); resp != nil {
+	if td.GrantData, resp = td.GrantType.Validate(tr); resp != nil {
 		return resp
 	}
 
@@ -104,16 +104,16 @@ func (a *AuthorizeServer) validateAccessTokenGrantType(tr *TokenRequest) (GrantT
 		return nil, errGrantTypeRequired
 	}
 
-	if _, ok := a.Grant[tr.GrantType]; !ok {
+	if _, ok := a.grant[tr.GrantType]; !ok {
 		return nil, errUnSupportedGrantType
 	}
 
-	return a.Grant[tr.GrantType], nil
+	return a.grant[tr.GrantType], nil
 }
 
 func (a *AuthorizeServer) validateAccessTokenClient(tr *TokenRequest, grantData *GrantData) *response {
 	var err error
-	client, err := a.Config.Store.GetClient(tr.ClientID)
+	client, err := a.Store.GetClient(tr.ClientID)
 	if err != nil {
 		return errInternal(err.Error())
 	}
@@ -190,6 +190,9 @@ func getCredentialsFromHttp(r *http.Request, config *Config) (string, string, *r
 
 		return pair[0], pair[1], nil
 	case config.AllowCredentialsBody:
+		if r.PostForm == nil {
+			r.ParseForm()
+		}
 		if r.PostForm.Get(`client_id`) == "" || r.PostForm.Get(`client_secret`) == "" {
 			return "", "", errCredentailsNotInBody
 		}

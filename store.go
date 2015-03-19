@@ -1,19 +1,27 @@
 package clover
 
-type Store interface {
+type AuthServerStore interface {
 	GetClient(id string) (Client, error)
-
-	SetAccessToken(accessToken *AccessToken) error
-	GetAccessToken(at string) (*AccessToken, error)
-
-	SetRefreshToken(rt *RefreshToken) error
-	GetRefreshToken(rt string) (*RefreshToken, error)
 	RemoveRefreshToken(rt string) error
+	GetUser(username, password string) (string, []string, error)
+	TokenStore
+	AuthCodeStore
+}
 
+type AuthCodeStore interface {
 	SetAuthorizeCode(ac *AuthorizeCode) error
 	GetAuthorizeCode(code string) (*AuthorizeCode, error)
+}
 
-	GetUser(username, password string) (string, []string, error)
+type TokenStore interface {
+	SetAccessToken(accessToken *AccessToken) error
+	GetAccessToken(at string) (*AccessToken, error)
+	SetRefreshToken(rt *RefreshToken) error
+	GetRefreshToken(rt string) (*RefreshToken, error)
+}
+
+type PublicKeyStore interface {
+	GetKey(clientID string) (*PublicKey, error)
 }
 
 type Client interface {
@@ -60,25 +68,32 @@ func (c *DefaultClient) GetRedirectURI() string {
 
 type RefreshToken struct {
 	RefreshToken string   `json:"refresh_token" bson:"_id"`
-	ClientID     string   `json:"client_id" bson:"client_id"`
-	UserID       string   `json:"user_id" bson:"user_id"`
-	Expires      int64    `json:"expires" bson:"expires"`
-	Scope        []string `json:"scope" bson:"scope"`
+	ClientID     string   `json:"client_id" bson:"c"`
+	UserID       string   `json:"user_id" bson:"u"`
+	Expires      int64    `json:"expires" bson:"e"`
+	Scope        []string `json:"scope" bson:"s"`
 }
 
 type AuthorizeCode struct {
 	Code        string   `json:"code" bson:"_id"`
-	ClientID    string   `json:"client_id" bson:"client_id"`
-	UserID      string   `json:"user_id" bson:"user_id"`
-	Expires     int64    `json:"expires" bson:"expires"`
-	Scope       []string `json:"scope" bson:"scope"`
-	RedirectURI string   `json:"redirect_uri" bson:"redirect_uri"`
+	ClientID    string   `json:"client_id" bson:"c"`
+	UserID      string   `json:"user_id" bson:"u"`
+	Expires     int64    `json:"expires" bson:"e"`
+	Scope       []string `json:"scope" bson:"s"`
+	RedirectURI string   `json:"redirect_uri" bson:"r"`
 }
 
 type AccessToken struct {
 	AccessToken string   `json:"access_token" bson:"_id"`
-	ClientID    string   `json:"client_id" bson:"client_id"`
-	UserID      string   `json:"user_id" bson:"user_id"`
-	Expires     int64    `json:"expires" bson:"expires"`
-	Scope       []string `json:"scope" bson:"scope"`
+	ClientID    string   `json:"client_id" bson:"c"`
+	UserID      string   `json:"user_id" bson:"u"`
+	Expires     int64    `json:"expires" bson:"e"`
+	Scope       []string `json:"scope" bson:"s"`
+}
+
+type PublicKey struct {
+	ClientID   string `json:"client_id" bson:"_id"`
+	PublicKey  string `json:"public_key" bson:"pu"`
+	PrivateKey string `json:"private_key" bson:"pr"`
+	Algorithm  string `json:"algorithm" bson:"a"`
 }

@@ -24,6 +24,8 @@ type response struct {
 	header      map[string]string
 }
 
+type respData map[string]interface{}
+
 func (r *response) IsError() bool {
 	return r.isErr
 }

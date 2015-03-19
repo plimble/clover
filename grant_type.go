@@ -28,32 +28,7 @@ func checkGrantType(grants []string, grant string) bool {
 }
 
 type GrantType interface {
-	Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *response)
+	Validate(tr *TokenRequest) (*GrantData, *response)
 	GetGrantType() string
-	CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *response
-}
-
-func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {
-	a.Grant[key] = grant
-}
-
-func (a *AuthorizeServer) RegisterAuthCodeGrant() {
-	a.Grant[AUTHORIZATION_CODE] = newAuthCodeGrant()
-	a.RespType[RESP_TYPE_CODE] = newCodeResponseType()
-}
-
-func (a *AuthorizeServer) RegisterClientGrant() {
-	a.Grant[REFRESH_TOKEN] = newRefreshGrant()
-}
-
-func (a *AuthorizeServer) RegisterPasswordGrant() {
-	a.Grant[PASSWORD] = newPasswordGrant()
-}
-
-func (a *AuthorizeServer) RegisterRefreshGrant() {
-	a.Grant[CLIENT_CREDENTIALS] = newClientGrant()
-}
-
-func (a *AuthorizeServer) RegisterImplicitGrant() {
-	a.Grant[IMPLICIT] = newAuthCodeGrant()
+	CreateAccessToken(td *TokenData, respType ResponseType) *response
 }

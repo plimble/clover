@@ -1,18 +1,19 @@
 package clover
 
 type authCodeGrant struct {
+	store AuthServerStore
 }
 
-func newAuthCodeGrant() GrantType {
-	return &authCodeGrant{}
+func newAuthCodeGrant(store AuthServerStore) GrantType {
+	return &authCodeGrant{store}
 }
 
-func (g *authCodeGrant) Validate(tr *TokenRequest, a *AuthorizeServer) (*GrantData, *response) {
+func (g *authCodeGrant) Validate(tr *TokenRequest) (*GrantData, *response) {
 	if tr.Code == "" {
 		return nil, errCodeRequired
 	}
 
-	auth, err := a.Config.Store.GetAuthorizeCode(tr.Code)
+	auth, err := g.store.GetAuthorizeCode(tr.Code)
 	if err != nil {
 		return nil, errAuthCodeNotExist
 	}
@@ -36,6 +37,6 @@ func (g *authCodeGrant) GetGrantType() string {
 	return AUTHORIZATION_CODE
 }
 
-func (g *authCodeGrant) CreateAccessToken(td *TokenData, a *AuthorizeServer, respType ResponseType) *response {
-	return respType.GetAccessToken(td, a, true)
+func (g *authCodeGrant) CreateAccessToken(td *TokenData, respType ResponseType) *response {
+	return respType.GetAccessToken(td, true)
 }

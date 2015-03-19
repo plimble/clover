@@ -5,11 +5,6 @@ import (
 	"strings"
 )
 
-const (
-	RESP_TYPE_CODE  = "code"
-	RESP_TYPE_TOKEN = "token"
-)
-
 type ValidAuthorize func(client Client, scopeIDs []string)
 
 type authorizeRequest struct {
@@ -42,7 +37,7 @@ func (a *AuthorizeServer) Authorize(w http.ResponseWriter, r *http.Request, isAu
 func (a *AuthorizeServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request, fn ValidAuthorize) {
 	ar := parseAuthorizeRequest(r)
 
-	client, scopes, resp := a.validateAuthorizeRequest(ar)
+	client, scopes, _, resp := a.validateAuthorizeRequest(ar)
 	if resp != nil {
 		resp.Write(w)
 		return
@@ -53,7 +48,7 @@ func (a *AuthorizeServer) ValidateAuthorize(w http.ResponseWriter, r *http.Reque
 
 func (a *AuthorizeServer) handleAuthorize(ar *authorizeRequest, isAuthorized bool) *response {
 	//re-validate
-	client, scopes, resp := a.validateAuthorizeRequest(ar)
+	client, scopes, respType, resp := a.validateAuthorizeRequest(ar)
 	if resp != nil {
 		return resp
 	}
@@ -63,37 +58,38 @@ func (a *AuthorizeServer) handleAuthorize(ar *authorizeRequest, isAuthorized boo
 		return errUserDeniedAccess.SetRedirect(ar.redirectURI, ar.responseType, ar.state)
 	}
 
-	return a.RespType[ar.responseType].GetAuthorizeResponse(client, scopes, ar, a)
+	return respType.GetAuthResponse(ar, client, scopes)
 }
 
-func (a *AuthorizeServer) validateAuthorizeRequest(ar *authorizeRequest) (Client, []string, *response) {
+func (a *AuthorizeServer) validateAuthorizeRequest(ar *authorizeRequest) (Client, []string, AuthResponseType, *response) {
 	var resp *response
 	var client Client
 	var scopes []string
+	var respType AuthResponseType
 
 	if client, resp = a.validateAuthorizeClientID(ar); resp != nil {
-		return nil, nil, resp
+		return nil, nil, nil, resp
 	}
 
 	if resp = a.validateAuthorizeRedirectURI(ar, client); resp != nil {
-		return nil, nil, resp
+		return nil, nil, nil, resp
 	}
 
 	if resp = a.validateAuthorizeState(ar); resp != nil {
-		return nil, nil, resp
+		return nil, nil, nil, resp
 	}
 
-	if resp = a.validateAuthorizeResponseType(ar, client); resp != nil {
+	if respType, resp = a.validateAuthorizeResponseType(ar, client); resp != nil {
 		resp.SetRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return nil, nil, resp
+		return nil, nil, nil, resp
 	}
 
 	if scopes, resp = a.validateAuthorizeScope(ar, client); resp != nil {
 		resp.SetRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return nil, nil, resp
+		return nil, nil, nil, resp
 	}
 
-	return client, scopes, nil
+	return client, scopes, respType, nil
 }
 
 func (a *AuthorizeServer) validateAuthorizeClientID(ar *authorizeRequest) (Client, *response) {
@@ -102,7 +98,7 @@ func (a *AuthorizeServer) validateAuthorizeClientID(ar *authorizeRequest) (Clien
 	}
 
 	//get client
-	client, err := a.Config.Store.GetClient(ar.clientID)
+	client, err := a.Store.GetClient(ar.clientID)
 	if err != nil {
 		return nil, errInvalidClientID
 	}
@@ -135,27 +131,27 @@ func (a *AuthorizeServer) validateAuthorizeRedirectURI(ar *authorizeRequest, cli
 	return nil
 }
 
-func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, client Client) *response {
+func (a *AuthorizeServer) validateAuthorizeResponseType(ar *authorizeRequest, client Client) (AuthResponseType, *response) {
 	switch ar.responseType {
 	case "":
-		return errInvalidRespType
+		return nil, errInvalidRespType
 	case RESP_TYPE_CODE:
 		if !checkGrantType(client.GetGrantType(), AUTHORIZATION_CODE) {
-			return errUnAuthorizedGrant
+			return nil, errUnAuthorizedGrant
 		}
-		return nil
+		return a.authRespType, nil
 	case RESP_TYPE_TOKEN:
 		if !a.Config.AllowImplicit {
-			return errUnSupportedImplicit
+			return nil, errUnSupportedImplicit
 		}
 
 		if !checkGrantType(client.GetGrantType(), IMPLICIT) {
-			return errUnAuthorizedGrant
+			return nil, errUnAuthorizedGrant
 		}
-		return nil
+		return a.tokenRespType, nil
 	}
 
-	return errCodeUnSupportedGrant
+	return nil, errCodeUnSupportedGrant
 }
 
 func (a *AuthorizeServer) validateAuthorizeScope(ar *authorizeRequest, client Client) ([]string, *response) {

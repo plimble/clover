@@ -1,8 +1,6 @@
 package clover
 
 type Config struct {
-	//Store
-	Store                Store
 	AccessLifeTime       int
 	AuthCodeLifetime     int
 	RefreshTokenLifetime int
@@ -16,23 +14,25 @@ type Config struct {
 }
 
 type AuthorizeServer struct {
-	Config   *Config
-	RespType map[string]ResponseType
-	Grant    map[string]GrantType
+	Store          AuthServerStore
+	Config         *Config
+	authRespType   AuthResponseType
+	tokenRespType  ResponseType
+	grant          map[string]GrantType
+	publicKeyStore PublicKeyStore
 }
 
-func NewAuthorizeServer(config *Config) *AuthorizeServer {
-	if config.Store == nil {
-		panic("store should not be nil")
+func NewAuthServer(store AuthServerStore, config *Config) *AuthorizeServer {
+	a := &AuthorizeServer{
+		Store:  store,
+		Config: config,
+		grant:  make(map[string]GrantType),
 	}
 
-	return &AuthorizeServer{
-		Config: config,
-		RespType: map[string]ResponseType{
-			RESP_TYPE_TOKEN: newTokenResponseType(),
-		},
-		Grant: make(map[string]GrantType),
-	}
+	a.authRespType = newAuthCodeResponseType(store, config)
+	a.tokenRespType = newTokenResponseType(store, config)
+
+	return a
 }
 
 func DefaultConfig() *Config {
@@ -44,4 +44,32 @@ func DefaultConfig() *Config {
 		AllowImplicit:        false,
 		StateParamRequired:   false,
 	}
+}
+
+func (a *AuthorizeServer) UseJWTAccessTokens(store PublicKeyStore) {
+	a.publicKeyStore = store
+}
+
+func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {
+	a.grant[key] = grant
+}
+
+func (a *AuthorizeServer) RegisterAuthCodeGrant() {
+	a.grant[AUTHORIZATION_CODE] = newAuthCodeGrant(a.Store)
+}
+
+func (a *AuthorizeServer) RegisterClientGrant() {
+	a.grant[REFRESH_TOKEN] = newRefreshGrant(a.Store)
+}
+
+func (a *AuthorizeServer) RegisterPasswordGrant() {
+	a.grant[PASSWORD] = newPasswordGrant(a.Store)
+}
+
+func (a *AuthorizeServer) RegisterRefreshGrant() {
+	a.grant[CLIENT_CREDENTIALS] = newClientGrant(a.Store)
+}
+
+func (a *AuthorizeServer) RegisterImplicitGrant() {
+	a.grant[IMPLICIT] = newAuthCodeGrant(a.Store)
 }
