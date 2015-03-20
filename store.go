@@ -1,23 +1,23 @@
 package clover
 
+//go:generate mockery -name AuthServerStore -inpkg
+//go:generate mockery -name PublicKeyStore -inpkg
+
 type AuthServerStore interface {
 	GetClient(id string) (Client, error)
 	RemoveRefreshToken(rt string) error
 	GetUser(username, password string) (string, []string, error)
-	TokenStore
-	AuthCodeStore
-}
-
-type AuthCodeStore interface {
 	SetAuthorizeCode(ac *AuthorizeCode) error
 	GetAuthorizeCode(code string) (*AuthorizeCode, error)
-}
-
-type TokenStore interface {
-	SetAccessToken(accessToken *AccessToken) error
-	GetAccessToken(at string) (*AccessToken, error)
 	SetRefreshToken(rt *RefreshToken) error
 	GetRefreshToken(rt string) (*RefreshToken, error)
+
+	AccessTokenStore
+}
+
+type AccessTokenStore interface {
+	SetAccessToken(accessToken *AccessToken) error
+	GetAccessToken(at string) (*AccessToken, error)
 }
 
 type PublicKeyStore interface {

@@ -7,12 +7,12 @@ import (
 )
 
 type authCodeResponseType struct {
-	store  AuthCodeStore
+	store  AuthServerStore
 	config *Config
 	unik   unik.Generator
 }
 
-func newAuthCodeResponseType(store AuthCodeStore, config *Config) *authCodeResponseType {
+func newAuthCodeResponseType(store AuthServerStore, config *Config) *authCodeResponseType {
 	return &authCodeResponseType{store, config, unik.NewUUIDV1()}
 }
 

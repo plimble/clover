@@ -9,8 +9,6 @@ type Config struct {
 	AllowCredentialsBody bool
 	AllowImplicit        bool
 	StateParamRequired   bool
-	// UseJWTAccessToken    bool
-	// JWTSignedString      string
 }
 
 type AuthorizeServer struct {
@@ -48,6 +46,7 @@ func DefaultConfig() *Config {
 
 func (a *AuthorizeServer) UseJWTAccessTokens(store PublicKeyStore) {
 	a.publicKeyStore = store
+	a.tokenRespType = newJWTResponseType(store, a.Store, a.Config)
 }
 
 func (a *AuthorizeServer) RegisterGrant(key string, grant GrantType) {
@@ -72,4 +71,8 @@ func (a *AuthorizeServer) RegisterRefreshGrant() {
 
 func (a *AuthorizeServer) RegisterImplicitGrant() {
 	a.grant[IMPLICIT] = newAuthCodeGrant(a.Store)
+}
+
+func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
+	a.Config.DefaultScopes = ids
 }

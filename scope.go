@@ -1,9 +1,5 @@
 package clover
 
-func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
-	a.Config.DefaultScopes = ids
-}
-
 func checkScope(available []string, request ...string) bool {
 	matched := 0
 

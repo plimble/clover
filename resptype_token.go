@@ -6,13 +6,13 @@ import (
 )
 
 type tokenResponseType struct {
-	tokenStore TokenStore
-	config     *Config
-	unik       unik.Generator
+	store  AuthServerStore
+	config *Config
+	unik   unik.Generator
 }
 
-func newTokenResponseType(tokenStore TokenStore, config *Config) *tokenResponseType {
-	return &tokenResponseType{tokenStore, config, unik.NewUUID1Base64()}
+func newTokenResponseType(store AuthServerStore, config *Config) *tokenResponseType {
+	return &tokenResponseType{store, config, unik.NewUUID1Base64()}
 }
 
 func (rt *tokenResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *response {
@@ -51,7 +51,7 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes [
 		Scope:       scopes,
 	}
 
-	if err := rt.tokenStore.SetAccessToken(at); err != nil {
+	if err := rt.store.SetAccessToken(at); err != nil {
 		return nil, errInternal(err.Error())
 	}
 
@@ -71,7 +71,7 @@ func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh 
 		Scope:        at.Scope,
 	}
 
-	if err := rt.tokenStore.SetRefreshToken(r); err != nil {
+	if err := rt.store.SetRefreshToken(r); err != nil {
 		return "", errInternal(err.Error())
 	}
 

@@ -9,18 +9,19 @@ import (
 type ValidAccessToken func(at *AccessToken)
 
 type ResourceServer struct {
-	store          TokenStore
+	tokenStore     AccessTokenStore
 	publicKeyStore PublicKeyStore
 }
 
-func NewResourceServer(store TokenStore) *ResourceServer {
+func NewResourceServer(store AccessTokenStore) *ResourceServer {
 	return &ResourceServer{
-		store: store,
+		tokenStore: store,
 	}
 }
 
 func (s *ResourceServer) UseJWTAccessTokens(store PublicKeyStore) {
 	s.publicKeyStore = store
+	s.tokenStore = newJWTAccessTokenStore(store)
 }
 
 func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes []string, fn ValidAccessToken) {
@@ -30,7 +31,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	at, err := s.store.GetAccessToken(token)
+	at, err := s.tokenStore.GetAccessToken(token)
 	if err != nil {
 		s.responseError(errInvalidAccessToken, scopes, w)
 		return
