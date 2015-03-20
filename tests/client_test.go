@@ -22,11 +22,6 @@ func TestClientAuthorize(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildClientForm())
-	fn := func(client clover.Client, scopes []string) {}
-
-	// Validate Authorize
-	c.auth.ValidateAuthorize(w, r, fn)
-	assert.Equal(t, 200, w.Code)
 
 	// Authorize
 	c.auth.Authorize(w, r, true)
@@ -55,11 +50,6 @@ func TestClientTokenAuthorize(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildClientTokenForm(""))
-	fn := func(client clover.Client, scopes []string) {}
-
-	// Validate Authorize
-	c.auth.ValidateAuthorize(w, r, fn)
-	assert.Equal(t, 200, w.Code)
 
 	// Authorize
 	c.auth.Authorize(w, r, true)

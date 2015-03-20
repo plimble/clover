@@ -34,11 +34,6 @@ func TestCodeAuthorize(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildAuthCodeForm("code"))
-	fn := func(client clover.Client, scopes []string) {}
-
-	// Validate Authorize
-	c.auth.ValidateAuthorize(w, r, fn)
-	assert.Equal(t, 200, w.Code)
 
 	// Authorize
 	c.auth.Authorize(w, r, true)

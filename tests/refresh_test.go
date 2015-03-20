@@ -24,11 +24,6 @@ func TestRefreshToken(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildPasswordForm())
-	fn := func(client clover.Client, scopes []string) {}
-
-	// Validate Authorize
-	c.auth.ValidateAuthorize(w, r, fn)
-	assert.Equal(t, 200, w.Code)
 
 	// Get Token
 	c.auth.Token(w, r)
