@@ -9,16 +9,12 @@ import (
 	"testing"
 )
 
-func buildRefreshForm(responseType, grantType, refreshToken, user, pass string) url.Values {
+func buildRefreshTokenForm(refreshToken string) url.Values {
 	form := url.Values{}
-	form.Set("redirect_uri", "http://localhost:4000/callback")
 	form.Set("client_id", "1001")
-	form.Set("grant_type", grantType)
+	form.Set("grant_type", "refresh_token")
 	form.Set("client_secret", "xyz")
-	form.Set("response_type", responseType)
 	form.Set("refresh_token", refreshToken)
-	form.Set("username", user)
-	form.Set("password", pass)
 
 	return form
 }
@@ -27,7 +23,7 @@ func TestRefreshToken(t *testing.T) {
 	c := newTestServer()
 
 	w := httptest.NewRecorder()
-	r := newTestRequest("http://localhost", "", buildRefreshForm("code", "password", "", "test", "1234"))
+	r := newTestRequest("http://localhost", "", buildPasswordForm())
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
@@ -43,15 +39,16 @@ func TestRefreshToken(t *testing.T) {
 
 	// Get Refresh Token
 	w = httptest.NewRecorder()
-	r = newTestRequest("http://localhost", "", buildRefreshForm("token", "refresh_token", resJSON["refresh_token"].(string), "test", "1234"))
+	r = newTestRequest("http://localhost", "", buildRefreshTokenForm(resJSON["refresh_token"].(string)))
 	c.auth.Token(w, r)
 
 	var resAt *clover.AccessToken
 	token, err := getTokenFromBody(w)
 
-	r = newTestRequest("http://localhost", "", buildClientForm("token", token))
+	r = newTestRequest("http://localhost", "", buildClientTokenForm(token))
 	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
 		resAt = at
 	})
+
 	assert.NotNil(t, resAt)
 }

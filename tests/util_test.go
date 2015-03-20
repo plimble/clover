@@ -92,6 +92,20 @@ func getTokenFromBody(w *httptest.ResponseRecorder) (string, error) {
 	return resJSON["access_token"].(string), err
 }
 
+func buildClientTokenForm(token string) url.Values {
+	form := url.Values{}
+	form.Set("redirect_uri", "http://localhost:4000/callback")
+	form.Set("client_id", "1001")
+	form.Set("grant_type", "client_credentials")
+	form.Set("client_secret", "xyz")
+	form.Set("response_type", "token")
+
+	if token != "" {
+		form.Set("access_token", token)
+	}
+	return form
+}
+
 func validateResponseToken(t *testing.T, body string) {
 	var resJSON map[string]interface{}
 	err := json.Unmarshal([]byte(body), &resJSON)

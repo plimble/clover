@@ -8,13 +8,20 @@ import (
 	"testing"
 )
 
-func buildAuthCodeForm(responseType, token string) url.Values {
+func buildAuthCodeForm(responseType string) url.Values {
+	form := url.Values{}
+	form.Set("client_id", "1001")
+	form.Set("response_type", responseType)
+
+	return form
+}
+
+func buildAuthTokenForm(token string) url.Values {
 	form := url.Values{}
 	form.Set("redirect_uri", "http://localhost:4000/callback")
 	form.Set("client_id", "1001")
-	form.Set("grant_type", "authorization_code")
 	form.Set("client_secret", "xyz")
-	form.Set("response_type", responseType)
+	form.Set("grant_type", "authorization_code")
 
 	if token != "" {
 		form.Set("access_token", token)
@@ -26,7 +33,7 @@ func TestCodeAuthorize(t *testing.T) {
 	c := newTestServer()
 
 	w := httptest.NewRecorder()
-	r := newTestRequest("http://localhost", "", buildAuthCodeForm("code", ""))
+	r := newTestRequest("http://localhost", "", buildAuthCodeForm("code"))
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
@@ -38,7 +45,7 @@ func TestCodeAuthorize(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 
 	// Get Token
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildAuthCodeForm("token", ""))
+	r = newTestRequest(w.HeaderMap["Location"][0], "", buildAuthTokenForm(""))
 	c.auth.Token(w, r)
 
 	assert.Equal(t, 302, w.Code)
@@ -48,7 +55,7 @@ func TestCodeAuthorize(t *testing.T) {
 	assert.NoError(t, err)
 	var resAt *clover.AccessToken
 
-	r = newTestRequest("http://localhost", "", buildAuthCodeForm("token", token))
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
 	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
 		resAt = at
 	})

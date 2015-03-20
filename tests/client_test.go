@@ -9,17 +9,11 @@ import (
 	"testing"
 )
 
-func buildClientForm(responseType string, token string) url.Values {
+func buildClientForm() url.Values {
 	form := url.Values{}
-	form.Set("redirect_uri", "http://localhost:4000/callback")
 	form.Set("client_id", "1001")
-	form.Set("grant_type", "client_credentials")
-	form.Set("client_secret", "xyz")
-	form.Set("response_type", responseType)
+	form.Set("response_type", "code")
 
-	if token != "" {
-		form.Set("access_token", token)
-	}
 	return form
 }
 
@@ -27,7 +21,7 @@ func TestClientAuthorize(t *testing.T) {
 	c := newTestServer()
 
 	w := httptest.NewRecorder()
-	r := newTestRequest("http://localhost", "", buildClientForm("code", ""))
+	r := newTestRequest("http://localhost", "", buildClientForm())
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
@@ -39,7 +33,7 @@ func TestClientAuthorize(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 
 	// Get Token
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientForm("token", ""))
+	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(""))
 	c.auth.Token(w, r)
 
 	assert.Equal(t, 302, w.Code)
@@ -49,7 +43,7 @@ func TestClientAuthorize(t *testing.T) {
 	assert.NoError(t, err)
 	var resAt *clover.AccessToken
 
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientForm("token", token))
+	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(token))
 	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
 		resAt = at
 	})
@@ -60,7 +54,7 @@ func TestClientTokenAuthorize(t *testing.T) {
 	c := newTestServer()
 
 	w := httptest.NewRecorder()
-	r := newTestRequest("http://localhost", "", buildClientForm("token", ""))
+	r := newTestRequest("http://localhost", "", buildClientTokenForm(""))
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
@@ -78,7 +72,7 @@ func TestClientTokenAuthorize(t *testing.T) {
 	assert.NoError(t, err)
 	var resAt *clover.AccessToken
 
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientForm("token", token))
+	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(token))
 	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
 		resAt = at
 	})
