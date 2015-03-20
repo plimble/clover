@@ -69,10 +69,6 @@ func (a *AuthorizeServer) RegisterRefreshGrant() {
 	a.grant[CLIENT_CREDENTIALS] = newClientGrant(a.Store)
 }
 
-func (a *AuthorizeServer) RegisterImplicitGrant() {
-	a.grant[IMPLICIT] = newAuthCodeGrant(a.Store)
-}
-
 func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
 	a.Config.DefaultScopes = ids
 }
