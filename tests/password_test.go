@@ -29,12 +29,22 @@ func TestPasswordAuthorize(t *testing.T) {
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
-	c.ValidateAuthorize(w, r, fn)
+	c.auth.ValidateAuthorize(w, r, fn)
 	assert.Equal(t, 200, w.Code)
 
 	// Get Token
-	c.Token(w, r)
+	c.auth.Token(w, r)
 
 	assert.Equal(t, 200, w.Code)
 	validateResponseToken(t, w.Body.String())
+
+	token, err := getTokenFromBody(w)
+	assert.NoError(t, err)
+	var resAt *clover.AccessToken
+
+	r = newTestRequest("http://localhost", "", buildClientForm("token", token))
+	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
+		resAt = at
+	})
+	assert.NotNil(t, resAt)
 }

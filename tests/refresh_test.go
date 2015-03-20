@@ -31,21 +31,27 @@ func TestRefreshToken(t *testing.T) {
 	fn := func(client clover.Client, scopes []string) {}
 
 	// Validate Authorize
-	c.ValidateAuthorize(w, r, fn)
+	c.auth.ValidateAuthorize(w, r, fn)
 	assert.Equal(t, 200, w.Code)
 
 	// Get Token
-	c.Token(w, r)
+	c.auth.Token(w, r)
 	assert.Equal(t, 200, w.Code)
 	var resJSON map[string]interface{}
 	err := json.Unmarshal([]byte(w.Body.String()), &resJSON)
 	assert.NoError(t, err)
 
 	// Get Refresh Token
+	w = httptest.NewRecorder()
 	r = newTestRequest("http://localhost", "", buildRefreshForm("token", "refresh_token", resJSON["refresh_token"].(string), "test", "1234"))
-	c.Token(w, r)
+	c.auth.Token(w, r)
 
-	var resJSON2 map[string]interface{}
-	json.Unmarshal([]byte(w.Body.String()), &resJSON2)
-	assert.NotEqual(t, resJSON2["refresh_token"], resJSON["refresh_token"])
+	var resAt *clover.AccessToken
+	token, err := getTokenFromBody(w)
+
+	r = newTestRequest("http://localhost", "", buildClientForm("token", token))
+	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
+		resAt = at
+	})
+	assert.NotNil(t, resAt)
 }

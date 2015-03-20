@@ -7,29 +7,39 @@ import (
 	"github.com/plimble/clover/store/memory"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 )
 
-func newTestServer() *clover.AuthorizeServer {
+type testApp struct {
+	auth     *clover.AuthorizeServer
+	resource *clover.ResourceServer
+}
+
+func newTestServer() *testApp {
 	config := &clover.Config{
 		AccessLifeTime:       1,
 		AuthCodeLifetime:     60,
-		RefreshTokenLifetime: 1,
+		RefreshTokenLifetime: 30,
 		AllowCredentialsBody: true,
 		AllowImplicit:        true,
 		StateParamRequired:   false,
 	}
 
-	auth := clover.NewAuthServer(newTestStore(), config)
+	store := newTestStore()
+	auth := clover.NewAuthServer(store, config)
 	auth.RegisterClientGrant()
 	auth.RegisterPasswordGrant()
 	auth.RegisterRefreshGrant()
 	auth.RegisterAuthCodeGrant()
-	auth.RegisterImplicitGrant()
+
 	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
-	return auth
+
+	resource := clover.NewResourceServer(store)
+	return &testApp{auth, resource}
 }
 
 func newTestStore() clover.AuthServerStore {
@@ -68,6 +78,18 @@ func newTestRequest(urlRequest, authType string, form url.Values) *http.Request 
 		panic(err)
 	}
 	return r
+}
+
+func getTokenFromUrl(w *httptest.ResponseRecorder) (string, error) {
+	str := strings.Split(w.HeaderMap["Location"][0], "=")
+	str = strings.Split(str[1], "&")
+	return str[0], nil
+}
+
+func getTokenFromBody(w *httptest.ResponseRecorder) (string, error) {
+	var resJSON map[string]interface{}
+	err := json.Unmarshal([]byte(w.Body.String()), &resJSON)
+	return resJSON["access_token"].(string), err
 }
 
 func validateResponseToken(t *testing.T, body string) {
