@@ -5,19 +5,27 @@ package clover
 
 type AuthServerStore interface {
 	GetClient(id string) (Client, error)
-	RemoveRefreshToken(rt string) error
-	GetUser(username, password string) (string, []string, error)
-	SetAuthorizeCode(ac *AuthorizeCode) error
-	GetAuthorizeCode(code string) (*AuthorizeCode, error)
-	SetRefreshToken(rt *RefreshToken) error
-	GetRefreshToken(rt string) (*RefreshToken, error)
-
 	AccessTokenStore
 }
 
 type AccessTokenStore interface {
 	SetAccessToken(accessToken *AccessToken) error
 	GetAccessToken(at string) (*AccessToken, error)
+}
+
+type UserStore interface {
+	GetUser(username, password string) (string, []string, error)
+}
+
+type RefreshTokenStore interface {
+	RemoveRefreshToken(rt string) error
+	SetRefreshToken(rt *RefreshToken) error
+	GetRefreshToken(rt string) (*RefreshToken, error)
+}
+
+type AuthCodeStore interface {
+	SetAuthorizeCode(ac *AuthorizeCode) error
+	GetAuthorizeCode(code string) (*AuthorizeCode, error)
 }
 
 type PublicKeyStore interface {
@@ -96,4 +104,12 @@ type PublicKey struct {
 	PublicKey  string `json:"public_key" bson:"pu"`
 	PrivateKey string `json:"private_key" bson:"pr"`
 	Algorithm  string `json:"algorithm" bson:"a"`
+}
+
+type stores struct {
+	authServer AuthServerStore
+	user       UserStore
+	refresh    RefreshTokenStore
+	code       AuthCodeStore
+	publicKey  PublicKeyStore
 }

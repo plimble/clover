@@ -6,8 +6,10 @@ const (
 	PASSWORD           = "password"
 	CLIENT_CREDENTIALS = "client_credentials"
 	IMPLICIT           = "implicit"
-	JWT_GRANT          = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+	// JWT_GRANT          = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 )
+
+type Grants map[string]GrantType
 
 type GrantData struct {
 	ClientID     string
@@ -30,5 +32,5 @@ func checkGrantType(grants []string, grant string) bool {
 type GrantType interface {
 	Validate(tr *TokenRequest) (*GrantData, *response)
 	GetGrantType() string
-	CreateAccessToken(td *TokenData, respType ResponseType) *response
+	CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response
 }

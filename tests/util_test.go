@@ -32,9 +32,9 @@ func newTestServer() *testApp {
 	store := newTestStore()
 	auth := clover.NewAuthServer(store, config)
 	auth.RegisterClientGrant()
-	auth.RegisterPasswordGrant()
-	auth.RegisterRefreshGrant()
-	auth.RegisterAuthCodeGrant()
+	auth.RegisterPasswordGrant(store)
+	auth.RegisterRefreshGrant(store)
+	auth.RegisterAuthCodeGrant(store)
 
 	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
 
@@ -42,7 +42,7 @@ func newTestServer() *testApp {
 	return &testApp{auth, resource}
 }
 
-func newTestStore() clover.AuthServerStore {
+func newTestStore() *memory.Storage {
 	// New Store(Memory)
 	store := memory.New()
 

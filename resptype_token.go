@@ -6,13 +6,14 @@ import (
 )
 
 type tokenResponseType struct {
-	store  AuthServerStore
-	config *Config
-	unik   unik.Generator
+	tokenStore   AccessTokenStore
+	refreshStore RefreshTokenStore
+	config       *Config
+	unik         unik.Generator
 }
 
-func newTokenResponseType(store AuthServerStore, config *Config) *tokenResponseType {
-	return &tokenResponseType{store, config, unik.NewUUID1Base64()}
+func newTokenResponseType(tokenStore AccessTokenStore, refreshStore RefreshTokenStore, config *Config) *tokenResponseType {
+	return &tokenResponseType{tokenStore, refreshStore, config, unik.NewUUID1Base64()}
 }
 
 func (rt *tokenResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *response {
@@ -51,7 +52,7 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes [
 		Scope:       scopes,
 	}
 
-	if err := rt.store.SetAccessToken(at); err != nil {
+	if err := rt.tokenStore.SetAccessToken(at); err != nil {
 		return nil, errInternal(err.Error())
 	}
 
@@ -59,7 +60,7 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes [
 }
 
 func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh bool) (string, *response) {
-	if !includeRefresh || rt.config.RefreshTokenLifetime < 1 {
+	if !includeRefresh || rt.refreshStore == nil || rt.config.RefreshTokenLifetime < 1 {
 		return "", nil
 	}
 
@@ -71,7 +72,7 @@ func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh 
 		Scope:        at.Scope,
 	}
 
-	if err := rt.store.SetRefreshToken(r); err != nil {
+	if err := rt.refreshStore.SetRefreshToken(r); err != nil {
 		return "", errInternal(err.Error())
 	}
 
@@ -80,6 +81,10 @@ func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh 
 
 func (rt *tokenResponseType) generateToken() string {
 	return rt.unik.Generate()
+}
+
+func (rt *tokenResponseType) SetRefreshStore(store RefreshTokenStore) {
+	rt.refreshStore = store
 }
 
 func (rt *tokenResponseType) createRespData(token string, expiresIn int, scopes []string, refresh, state string) respData {

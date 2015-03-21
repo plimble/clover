@@ -15,3 +15,21 @@ func addSecondUnix(sec int) int64 {
 func isExpireUnix(expires int64) bool {
 	return time.Now().UTC().Truncate(time.Nanosecond).Unix() > expires
 }
+
+func copyClientToGrant(grantData *GrantData, client Client) {
+	if grantData.UserID == "" {
+		grantData.UserID = client.GetUserID()
+	}
+
+	if grantData.ClientID == "" {
+		grantData.ClientID = client.GetClientID()
+	}
+
+	if len(grantData.Scope) == 0 {
+		grantData.Scope = client.GetScope()
+	}
+
+	if len(grantData.GrantType) == 0 {
+		grantData.GrantType = client.GetGrantType()
+	}
+}

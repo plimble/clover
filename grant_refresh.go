@@ -1,10 +1,10 @@
 package clover
 
 type refreshGrant struct {
-	store AuthServerStore
+	store RefreshTokenStore
 }
 
-func newRefreshGrant(store AuthServerStore) GrantType {
+func newRefreshGrant(store RefreshTokenStore) GrantType {
 	return &refreshGrant{store}
 }
 
@@ -34,7 +34,7 @@ func (g *refreshGrant) GetGrantType() string {
 	return REFRESH_TOKEN
 }
 
-func (g *refreshGrant) CreateAccessToken(td *TokenData, respType ResponseType) *response {
+func (g *refreshGrant) CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response {
 	if err := g.store.RemoveRefreshToken(td.GrantData.RefreshToken); err != nil {
 		return errInternal(err.Error())
 	}

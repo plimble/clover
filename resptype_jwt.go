@@ -14,12 +14,12 @@ type jwtResponseType struct {
 	*tokenResponseType
 }
 
-func newJWTResponseType(publicKeyStore PublicKeyStore, store AuthServerStore, config *Config) *jwtResponseType {
+func newJWTResponseType(publicKeyStore PublicKeyStore, tokenStore AccessTokenStore, refreshStore RefreshTokenStore, config *Config) *jwtResponseType {
 	return &jwtResponseType{
 		unik:              unik.NewUUID1Base64(),
 		config:            config,
 		publicKeyStore:    publicKeyStore,
-		tokenResponseType: newTokenResponseType(store, config),
+		tokenResponseType: newTokenResponseType(tokenStore, refreshStore, config),
 	}
 }
 
@@ -44,7 +44,7 @@ func (rt *jwtResponseType) createAccessToken(clientID, userID string, scopes []s
 		Scope:       scopes,
 	}
 
-	if err := rt.store.SetAccessToken(at); err != nil {
+	if err := rt.tokenStore.SetAccessToken(at); err != nil {
 		return nil, errInternal(err.Error())
 	}
 

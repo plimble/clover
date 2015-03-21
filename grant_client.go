@@ -30,6 +30,6 @@ func (g *clientGrant) GetGrantType() string {
 	return CLIENT_CREDENTIALS
 }
 
-func (g *clientGrant) CreateAccessToken(td *TokenData, respType ResponseType) *response {
+func (g *clientGrant) CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response {
 	return respType.GetAccessToken(td, false)
 }

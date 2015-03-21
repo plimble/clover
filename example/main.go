@@ -10,7 +10,7 @@ import (
 	"net/url"
 )
 
-func setupStore(session *mgo.Session) clover.Store {
+func setupStore(session *mgo.Session) *mongo.Storage {
 	session.DB("oauth").C("oauth_client").UpsertId("1001", clover.DefaultClient{
 		ClientID:     "1001",
 		ClientSecret: "xyz",
@@ -62,14 +62,12 @@ func main() {
 
 	store := setupStore(session)
 	config := clover.DefaultConfig()
-	config.Store = store
 	config.AllowImplicit = true
-	auth := clover.NewAuthorizeServer(config)
+	auth := clover.NewAuthServer(store, config)
 	auth.RegisterClientGrant()
-	auth.RegisterPasswordGrant()
-	auth.RegisterRefreshGrant()
-	auth.RegisterAuthCodeGrant()
-	auth.RegisterImplicitGrant()
+	auth.RegisterPasswordGrant(store)
+	auth.RegisterRefreshGrant(store)
+	auth.RegisterAuthCodeGrant(store)
 	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
 
 	resource := clover.NewResourceServer(store)

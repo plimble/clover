@@ -1,10 +1,10 @@
 package clover
 
 type authCodeGrant struct {
-	store AuthServerStore
+	store AuthCodeStore
 }
 
-func newAuthCodeGrant(store AuthServerStore) GrantType {
+func newAuthCodeGrant(store AuthCodeStore) GrantType {
 	return &authCodeGrant{store}
 }
 
@@ -37,6 +37,6 @@ func (g *authCodeGrant) GetGrantType() string {
 	return AUTHORIZATION_CODE
 }
 
-func (g *authCodeGrant) CreateAccessToken(td *TokenData, respType ResponseType) *response {
+func (g *authCodeGrant) CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response {
 	return respType.GetAccessToken(td, true)
 }
