@@ -34,9 +34,9 @@ var (
 	errAuthCodeNotExist         = newRespErr(400, "invalid_grant", "Authorization code doesn't exist or is invalid for the client")
 	errAuthCodeExpired          = newRespErr(400, "invalid_grant", "The authorization code has expired")
 	errAssetionRequired         = newRespErr(400, "invalid_request", "Missing parameter: assertion is required")
-	errInvalidAccessToken       = newRespErr(400, "invalid_token", "The access token provided is invalid")
-	errAccessTokenExpired       = newRespErr(400, "expired_token", "The access token provided has expired")
-	errInsufficientScope        = newRespErr(403, "insufficient_scope", "The request requires higher privileges than provided by the access token")
+	errInvalidAccessToken       = newRespErr(401, "invalid_token", "The access token provided is invalid")
+	errAccessTokenExpired       = newRespErr(401, "expired_token", "The access token provided has expired")
+	errInsufficientScope        = newRespErr(401, "insufficient_scope", "The request requires higher privileges than provided by the access token")
 	errInvalidUsernamePAssword  = newRespErr(403, "invalid_grant", "Invalid username and password combination")
 )
 

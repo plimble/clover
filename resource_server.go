@@ -1,7 +1,7 @@
 package clover
 
 import (
-	"fmt"
+	"github.com/plimble/utils/strings2"
 	"net/http"
 	"strings"
 )
@@ -17,41 +17,52 @@ func NewResourceServer(config *ResourceConfig) *ResourceServer {
 func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes ...string) (*AccessToken, *Response) {
 	token, resp := getTokenFromHttp(r)
 	if resp != nil {
-		return nil, s.responseError(resp, scopes, w)
+		return nil, s.setHeader(resp, nil, w)
 	}
 
 	at, err := s.config.AuthServerStore.GetAccessToken(token)
 	if err != nil {
-		return nil, s.responseError(errInvalidAccessToken, scopes, w)
+		return nil, s.setHeader(errInvalidAccessToken, nil, w)
 	}
 
 	if at.Expires > 0 && isExpireUnix(at.Expires) {
-		return nil, s.responseError(errAccessTokenExpired, scopes, w)
+		return nil, s.setHeader(errAccessTokenExpired, nil, w)
 	}
 
 	if len(scopes) == 0 {
-		return at, newRespData(nil)
+		return at, s.setHeader(newRespData(nil), nil, w)
 	}
 
 	if len(scopes) > 0 && len(at.Scope) == 0 {
-		return nil, s.responseError(errInsufficientScope, scopes, w)
+		return nil, s.setHeader(errInsufficientScope, scopes, w)
 	}
 
 	for _, scope := range scopes {
 		if checkScope(at.Scope, scope) {
-			return at, newRespData(nil)
+			return at, s.setHeader(newRespData(nil), scopes, w)
 		}
 	}
 
-	return nil, s.responseError(errInsufficientScope, scopes, w)
+	return nil, s.setHeader(errInsufficientScope, scopes, w)
 }
 
-func (s *ResourceServer) responseError(resp *Response, scopes []string, w http.ResponseWriter) *Response {
-	resp.setHeader(map[string]string{
-		"WWW-Authenticate": fmt.Sprintf(`%s realm="%s", scope="%s", error="%s", error_description="%s"`,
-			"Bearer", "Service", strings.Join(scopes, " "), resp.data["error"], resp.data["error_description"],
-		),
-	})
+func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.ResponseWriter) *Response {
+	strs := []string{}
+	// authHeader := string2.Concat(`Bearer realm="`, s.config.WWWRealm, `"`)
+	strs = append(strs, `Bearer realm="`, s.config.WWWRealm, `"`)
+
+	if len(scopes) > 0 {
+		// authHeader = string2.Concat(authHeader, `, scopes="`, strings.Join(scopes, " "), `"`)
+		strs = append(strs, `, scopes="`, strings.Join(scopes, " "), `"`)
+	}
+
+	if resp.IsError() {
+		strs = append(strs, `, error="`, resp.data["error"].(string), `", error_description="`, resp.data["error_description"].(string), `"`)
+		// authHeader = string2.Concat(authHeader, `, error="`, resp.data["error"].(string), `", error_description="`, resp.data["error_description"].(string), `"`)
+	}
+
+	w.Header().Set("WWW-Authenticate", string2.Concat(strs...))
+
 	return resp
 }
 
