@@ -51,25 +51,25 @@ func (a *AuthorizeServer) UseJWTAccessTokens(store PublicKeyStore) {
 	a.stores.publicKey = store
 }
 
-func (a *AuthorizeServer) RegisterGrant(name string, grant GrantType) {
+func (a *AuthorizeServer) AddGrant(name string, grant GrantType) {
 	a.grant[name] = grant
 }
 
-func (a *AuthorizeServer) RegisterAuthCodeGrant(store AuthCodeStore) {
+func (a *AuthorizeServer) AddAuthCodeGrant(store AuthCodeStore) {
 	a.stores.code = store
 	a.grant[AUTHORIZATION_CODE] = newAuthCodeGrant(store)
 }
 
-func (a *AuthorizeServer) RegisterClientGrant() {
+func (a *AuthorizeServer) AddClientGrant() {
 	a.grant[CLIENT_CREDENTIALS] = newClientGrant(a.stores.authServer)
 }
 
-func (a *AuthorizeServer) RegisterPasswordGrant(store UserStore) {
+func (a *AuthorizeServer) AddPasswordGrant(store UserStore) {
 	a.stores.user = store
 	a.grant[PASSWORD] = newPasswordGrant(store)
 }
 
-func (a *AuthorizeServer) RegisterRefreshGrant(store RefreshTokenStore) {
+func (a *AuthorizeServer) AddRefreshGrant(store RefreshTokenStore) {
 	a.stores.refresh = store
 	a.grant[REFRESH_TOKEN] = newRefreshGrant(store)
 }

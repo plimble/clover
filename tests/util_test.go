@@ -31,10 +31,10 @@ func newTestServer() *testApp {
 
 	store := newTestStore()
 	auth := clover.NewAuthServer(store, config)
-	auth.RegisterClientGrant()
-	auth.RegisterPasswordGrant(store)
-	auth.RegisterRefreshGrant(store)
-	auth.RegisterAuthCodeGrant(store)
+	auth.AddClientGrant()
+	auth.AddPasswordGrant(store)
+	auth.AddRefreshGrant(store)
+	auth.AddAuthCodeGrant(store)
 
 	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
 

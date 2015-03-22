@@ -64,10 +64,10 @@ func main() {
 	config := clover.DefaultConfig()
 	config.AllowImplicit = true
 	auth := clover.NewAuthServer(store, config)
-	auth.RegisterClientGrant()
-	auth.RegisterPasswordGrant(store)
-	auth.RegisterRefreshGrant(store)
-	auth.RegisterAuthCodeGrant(store)
+	auth.AddClientGrant()
+	auth.AddPasswordGrant(store)
+	auth.AddRefreshGrant(store)
+	auth.AddAuthCodeGrant(store)
 	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
 
 	resource := clover.NewResourceServer(store)
