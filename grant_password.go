@@ -8,7 +8,7 @@ func newPasswordGrant(store UserStore) GrantType {
 	return &passwordGrant{store}
 }
 
-func (g *passwordGrant) Validate(tr *TokenRequest) (*GrantData, *response) {
+func (g *passwordGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	if tr.Username == "" || tr.Password == "" {
 		return nil, errUsernamePasswordRequired
 	}
@@ -29,6 +29,6 @@ func (g *passwordGrant) GetGrantType() string {
 	return PASSWORD
 }
 
-func (g *passwordGrant) CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response {
+func (g *passwordGrant) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
 	return respType.GetAccessToken(td, true)
 }

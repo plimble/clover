@@ -7,20 +7,20 @@ const (
 )
 
 // type ResponseType interface {
-// 	GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *response
-// 	GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *response
+// 	GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *Response
+// 	GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *Response
 // 	GetResponseType() string
 // }
 
 type ResponseType interface {
-	AuthResponseType
-	AccessTokenResponseType
+	AuthRespType
+	TokenRespType
 }
 
-type AuthResponseType interface {
-	GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *response
+type AuthRespType interface {
+	GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response
 }
 
-type AccessTokenResponseType interface {
-	GetAccessToken(td *TokenData, includeRefresh bool) *response
+type TokenRespType interface {
+	GetAccessToken(td *TokenData, includeRefresh bool) *Response
 }

@@ -24,33 +24,29 @@ type TokenData struct {
 }
 
 type tokenController struct {
-	config        *Config
-	store         AuthServerStore
-	grant         Grants
-	tokenRespType AccessTokenResponseType
+	config        *AuthConfig
+	tokenRespType TokenRespType
 }
 
-func newTokenController(config *Config, store AuthServerStore, grant Grants, tokenRespType AccessTokenResponseType) *tokenController {
+func newTokenController(config *AuthConfig, tokenRespType TokenRespType) *tokenController {
 	return &tokenController{
 		config:        config,
-		store:         store,
-		grant:         grant,
 		tokenRespType: tokenRespType,
 	}
 }
 
-func (t *tokenController) handleAccessToken(tr *TokenRequest) *response {
+func (t *tokenController) handleAccessToken(tr *TokenRequest) *Response {
 	td := &TokenData{}
-	if resp := t.validateAccessToken(tr, td); resp != nil {
+	if resp := t.validateToken(tr, td); resp != nil {
 		return resp
 	}
 
 	return td.GrantType.CreateAccessToken(td, t.tokenRespType)
 }
 
-func (t *tokenController) validateAccessToken(tr *TokenRequest, td *TokenData) *response {
-	var resp *response
-	if td.GrantType, resp = t.validateAccessTokenGrantType(tr); resp != nil {
+func (t *tokenController) validateToken(tr *TokenRequest, td *TokenData) *Response {
+	var resp *Response
+	if td.GrantType, resp = t.validateGrantType(tr); resp != nil {
 		return resp
 	}
 
@@ -59,7 +55,7 @@ func (t *tokenController) validateAccessToken(tr *TokenRequest, td *TokenData) *
 	}
 
 	if td.GrantType.GetGrantType() != CLIENT_CREDENTIALS {
-		if resp = t.validateAccessTokenClient(tr, td.GrantData); resp != nil {
+		if resp = t.validateClient(tr, td.GrantData); resp != nil {
 			return resp
 		}
 	}
@@ -68,28 +64,28 @@ func (t *tokenController) validateAccessToken(tr *TokenRequest, td *TokenData) *
 		return errUnAuthorizedGrant
 	}
 
-	if td.Scope, resp = t.validateAccessTokenScope(tr, td.GrantData); resp != nil {
+	if td.Scope, resp = t.validateScope(tr, td.GrantData); resp != nil {
 		return resp
 	}
 
 	return nil
 }
 
-func (t *tokenController) validateAccessTokenGrantType(tr *TokenRequest) (GrantType, *response) {
+func (t *tokenController) validateGrantType(tr *TokenRequest) (GrantType, *Response) {
 	if tr.GrantType == "" {
 		return nil, errGrantTypeRequired
 	}
 
-	if _, ok := t.grant[tr.GrantType]; !ok {
+	if _, ok := t.config.Grants[tr.GrantType]; !ok {
 		return nil, errUnSupportedGrantType
 	}
 
-	return t.grant[tr.GrantType], nil
+	return t.config.Grants[tr.GrantType], nil
 }
 
-func (t *tokenController) validateAccessTokenClient(tr *TokenRequest, grantData *GrantData) *response {
+func (t *tokenController) validateClient(tr *TokenRequest, grantData *GrantData) *Response {
 	var err error
-	client, err := t.store.GetClient(tr.ClientID)
+	client, err := t.config.AuthServerStore.GetClient(tr.ClientID)
 	if err != nil {
 		return errInternal(err.Error())
 	}
@@ -103,7 +99,7 @@ func (t *tokenController) validateAccessTokenClient(tr *TokenRequest, grantData 
 	return nil
 }
 
-func (t *tokenController) validateAccessTokenScope(tr *TokenRequest, grantData *GrantData) ([]string, *response) {
+func (t *tokenController) validateScope(tr *TokenRequest, grantData *GrantData) ([]string, *Response) {
 	scopes := strings.Fields(tr.Scope)
 	if len(scopes) > 0 {
 		if grantData.Scope != nil && len(grantData.Scope) > 0 {

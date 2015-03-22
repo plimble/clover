@@ -15,7 +15,7 @@ const (
 	CODE_REDIRECT          = 302
 )
 
-type response struct {
+type Response struct {
 	code        int
 	data        map[string]interface{}
 	inFragment  bool
@@ -26,11 +26,15 @@ type response struct {
 
 type respData map[string]interface{}
 
-func (r *response) IsError() bool {
+func (r *Response) IsError() bool {
 	return r.isErr
 }
 
-func (r *response) SetRedirect(uri, respType, state string) *response {
+func (r *Response) IsRedirect() bool {
+	return r.code == 302
+}
+
+func (r *Response) setRedirect(uri, respType, state string) *Response {
 	r.redirectURI = uri
 	r.code = 302
 
@@ -45,11 +49,11 @@ func (r *response) SetRedirect(uri, respType, state string) *response {
 	return r
 }
 
-func (r *response) SetHeader(header map[string]string) {
+func (r *Response) setHeader(header map[string]string) {
 	r.header = header
 }
 
-func (r *response) Write(w http.ResponseWriter) {
+func (r *Response) Write(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	for k, v := range r.header {
@@ -66,7 +70,7 @@ func (r *response) Write(w http.ResponseWriter) {
 	encoder.Encode(r.data)
 }
 
-func (r *response) redirect(w http.ResponseWriter) {
+func (r *Response) redirect(w http.ResponseWriter) {
 	u, err := url.Parse(r.redirectURI)
 	if err != nil {
 		errInternal(err.Error()).Write(w)
@@ -92,8 +96,8 @@ func (r *response) redirect(w http.ResponseWriter) {
 	w.WriteHeader(302)
 }
 
-func NewRespErr(code int, key, desc string) *response {
-	return &response{
+func newRespErr(code int, key, desc string) *Response {
+	return &Response{
 		code:  code,
 		isErr: true,
 		data: map[string]interface{}{
@@ -103,8 +107,8 @@ func NewRespErr(code int, key, desc string) *response {
 	}
 }
 
-func NewRespData(data map[string]interface{}) *response {
-	return &response{
+func newRespData(data map[string]interface{}) *Response {
+	return &Response{
 		code:  200,
 		isErr: false,
 		data:  data,

@@ -14,6 +14,10 @@ func newJWTAccessTokenStore(publicKeyStore PublicKeyStore) *jwtAccessTokenStore 
 	return &jwtAccessTokenStore{publicKeyStore}
 }
 
+func (s *jwtAccessTokenStore) GetClient(id string) (Client, error) {
+	return nil, nil
+}
+
 func (s *jwtAccessTokenStore) SetAccessToken(accessToken *AccessToken) error {
 	return nil
 }

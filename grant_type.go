@@ -30,7 +30,7 @@ func checkGrantType(grants []string, grant string) bool {
 }
 
 type GrantType interface {
-	Validate(tr *TokenRequest) (*GrantData, *response)
+	Validate(tr *TokenRequest) (*GrantData, *Response)
 	GetGrantType() string
-	CreateAccessToken(td *TokenData, respType AccessTokenResponseType) *response
+	CreateAccessToken(td *TokenData, respType TokenRespType) *Response
 }

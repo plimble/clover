@@ -8,25 +8,23 @@ import (
 )
 
 type jwtResponseType struct {
-	unik           unik.Generator
-	config         *Config
-	publicKeyStore PublicKeyStore
-	*tokenResponseType
+	unik   unik.Generator
+	config *AuthConfig
+	*tokenRespType
 }
 
-func newJWTResponseType(publicKeyStore PublicKeyStore, tokenStore AccessTokenStore, refreshStore RefreshTokenStore, config *Config) *jwtResponseType {
+func newJWTResponseType(tokenRespType *tokenRespType, config *AuthConfig) *jwtResponseType {
 	return &jwtResponseType{
-		unik:              unik.NewUUID1Base64(),
-		config:            config,
-		publicKeyStore:    publicKeyStore,
-		tokenResponseType: newTokenResponseType(tokenStore, refreshStore, config),
+		unik:          unik.NewUUID1Base64(),
+		config:        config,
+		tokenRespType: tokenRespType,
 	}
 }
 
-func (rt *jwtResponseType) createAccessToken(clientID, userID string, scopes []string) (*AccessToken, *response) {
+func (rt *jwtResponseType) createAccessToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
 	expires := addSecondUnix(rt.config.AccessLifeTime)
 
-	key, err := rt.publicKeyStore.GetKey(clientID)
+	key, err := rt.config.PublicKeyStore.GetKey(clientID)
 	if err != nil {
 		return nil, errInternal(err.Error())
 	}
@@ -44,7 +42,7 @@ func (rt *jwtResponseType) createAccessToken(clientID, userID string, scopes []s
 		Scope:       scopes,
 	}
 
-	if err := rt.tokenStore.SetAccessToken(at); err != nil {
+	if err := rt.config.AuthServerStore.SetAccessToken(at); err != nil {
 		return nil, errInternal(err.Error())
 	}
 

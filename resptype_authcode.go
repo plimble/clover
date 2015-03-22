@@ -7,16 +7,15 @@ import (
 )
 
 type authCodeResponseType struct {
-	store  AuthCodeStore
-	config *Config
+	config *AuthConfig
 	unik   unik.Generator
 }
 
-func newAuthCodeResponseType(store AuthCodeStore, config *Config) *authCodeResponseType {
-	return &authCodeResponseType{store, config, unik.NewUUIDV1()}
+func newAuthCodeResponseType(config *AuthConfig) *authCodeResponseType {
+	return &authCodeResponseType{config, unik.NewUUIDV1()}
 }
 
-func (rt *authCodeResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *response {
+func (rt *authCodeResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
 	ac, resp := rt.createAuthCode(client, scopes, ar.redirectURI)
 	if resp != nil {
 		return resp
@@ -24,10 +23,10 @@ func (rt *authCodeResponseType) GetAuthResponse(ar *authorizeRequest, client Cli
 
 	data := rt.createRespData(ac.Code, ar.state)
 
-	return NewRespData(data).SetRedirect(ar.redirectURI, ar.responseType, ar.state)
+	return newRespData(data).setRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
-func (rt *authCodeResponseType) createAuthCode(client Client, scopes []string, redirectURI string) (*AuthorizeCode, *response) {
+func (rt *authCodeResponseType) createAuthCode(client Client, scopes []string, redirectURI string) (*AuthorizeCode, *Response) {
 	ac := &AuthorizeCode{
 		Code:        rt.generateAuthCode(),
 		ClientID:    client.GetClientID(),
@@ -37,7 +36,7 @@ func (rt *authCodeResponseType) createAuthCode(client Client, scopes []string, r
 		RedirectURI: redirectURI,
 	}
 
-	if err := rt.store.SetAuthorizeCode(ac); err != nil {
+	if err := rt.config.AuthCodeStore.SetAuthorizeCode(ac); err != nil {
 		return nil, errInternal(err.Error())
 	}
 

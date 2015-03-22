@@ -6,22 +6,27 @@ import (
 )
 
 type App struct {
-	auth     *clover.AuthorizeServer
+	auth     *clover.AuthServer
 	resource *clover.ResourceServer
 }
 
 func (a *App) grantScreen(c *ace.C) {
-	a.auth.ValidateAuthorize(c.Writer, c.Request, func(client clover.Client, scopes []string) {
-		//go to dialog page
-		c.HTML("authorize.html", map[string]interface{}{
-			"scopes": scopes,
-		})
+	client, scopes, resp := a.auth.ValidateAuthorize(c.Writer, c.Request)
+	if resp.IsError() {
+		resp.Write(c.Writer)
+		return
+	}
+
+	c.HTML("authorize.html", map[string]interface{}{
+		"client": client,
+		"scopes": scopes,
 	})
 }
 
 func (a *App) grant(c *ace.C) {
 	approve := c.MustPostString("approve", "")
-	a.auth.Authorize(c.Writer, c.Request, approve == "approve")
+	resp := a.auth.Authorize(c.Writer, c.Request, approve == "approve")
+	resp.Write(c.Writer)
 }
 
 func (a *App) signinScreen(c *ace.C) {
@@ -38,7 +43,8 @@ func (a *App) signin(c *ace.C) {
 }
 
 func (a *App) token(c *ace.C) {
-	a.auth.Token(c.Writer, c.Request)
+	resp := a.auth.Token(c.Writer, c.Request)
+	resp.Write(c.Writer)
 }
 
 func (a *App) callback(c *ace.C) {
@@ -50,7 +56,11 @@ func (a *App) callback(c *ace.C) {
 }
 
 func (a *App) home(c *ace.C) {
-	a.resource.VerifyAccessToken(c.Writer, c.Request, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		c.HTML("home.html", nil)
-	})
+	_, resp := a.resource.VerifyAccessToken(c.Writer, c.Request, "read_my_timeline")
+	if resp.IsError() {
+		resp.Write(c.Writer)
+		return
+	}
+
+	c.HTML("home.html", nil)
 }

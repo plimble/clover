@@ -6,68 +6,56 @@ import (
 	"strings"
 )
 
-type ValidAccessToken func(at *AccessToken)
-
 type ResourceServer struct {
-	tokenStore     AccessTokenStore
-	publicKeyStore PublicKeyStore
+	config *ResourceConfig
 }
 
-func NewResourceServer(store AccessTokenStore) *ResourceServer {
-	return &ResourceServer{
-		tokenStore: store,
-	}
+func NewResourceServer(config *ResourceConfig) *ResourceServer {
+	return &ResourceServer{config}
 }
 
-func (s *ResourceServer) UseJWTAccessTokens(store PublicKeyStore) {
-	s.publicKeyStore = store
-	s.tokenStore = newJWTAccessTokenStore(store)
-}
-
-func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes []string, fn ValidAccessToken) {
+func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes ...string) (*AccessToken, *Response) {
 	token, resp := getTokenFromHttp(r)
 	if resp != nil {
-		s.responseError(resp, scopes, w)
-		return
+		return nil, s.responseError(resp, scopes, w)
 	}
 
-	at, err := s.tokenStore.GetAccessToken(token)
+	at, err := s.config.AuthServerStore.GetAccessToken(token)
 	if err != nil {
-		s.responseError(errInvalidAccessToken, scopes, w)
-		return
+		return nil, s.responseError(errInvalidAccessToken, scopes, w)
 	}
 
 	if at.Expires > 0 && isExpireUnix(at.Expires) {
-		s.responseError(errAccessTokenExpired, scopes, w)
-		return
+		return nil, s.responseError(errAccessTokenExpired, scopes, w)
+	}
+
+	if len(scopes) == 0 {
+		return at, newRespData(nil)
 	}
 
 	if len(scopes) > 0 && len(at.Scope) == 0 {
-		s.responseError(errInsufficientScope, scopes, w)
-		return
+		return nil, s.responseError(errInsufficientScope, scopes, w)
 	}
 
 	for _, scope := range scopes {
 		if checkScope(at.Scope, scope) {
-			fn(at)
-			return
+			return at, newRespData(nil)
 		}
 	}
 
-	s.responseError(errInsufficientScope, scopes, w)
-	return
+	return nil, s.responseError(errInsufficientScope, scopes, w)
 }
 
-func (s *ResourceServer) responseError(resp *response, scopes []string, w http.ResponseWriter) {
-	resp.SetHeader(map[string]string{
+func (s *ResourceServer) responseError(resp *Response, scopes []string, w http.ResponseWriter) *Response {
+	resp.setHeader(map[string]string{
 		"WWW-Authenticate": fmt.Sprintf(`%s realm="%s", scope="%s", error="%s", error_description="%s"`,
 			"Bearer", "Service", strings.Join(scopes, " "), resp.data["error"], resp.data["error_description"],
 		),
 	})
-	resp.Write(w)
+	return resp
 }
 
-func getTokenFromHttp(r *http.Request) (string, *response) {
+func getTokenFromHttp(r *http.Request) (string, *Response) {
 	auth := r.Header.Get(`Authorization`)
 	postAuth := r.PostFormValue("access_token")
 	getAuth := r.URL.Query().Get("access_token")

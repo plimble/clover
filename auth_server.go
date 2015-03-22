@@ -6,118 +6,58 @@ import (
 	"strings"
 )
 
-type Config struct {
-	AccessLifeTime       int
-	AuthCodeLifetime     int
-	RefreshTokenLifetime int
-
-	DefaultScopes        []string
-	AllowCredentialsBody bool
-	AllowImplicit        bool
-	StateParamRequired   bool
+type AuthServer struct {
+	Config    *AuthConfig
+	authCtrl  *authController
+	tokenCtrl *tokenController
 }
 
-type AuthorizeServer struct {
-	stores        *stores
-	Config        *Config
-	tokenRespType ResponseType
-	grant         map[string]GrantType
-	authCtrl      *authController
-	tokenCtrl     *tokenController
-}
-
-func NewAuthServer(store AuthServerStore, config *Config) *AuthorizeServer {
-	a := &AuthorizeServer{
-		stores: &stores{authServer: store},
+func NewAuthServer(config *AuthConfig) *AuthServer {
+	a := &AuthServer{
 		Config: config,
-		grant:  make(map[string]GrantType),
 	}
+
+	tokenResp := a.getTokenRespType()
+	authResp := newAuthCodeResponseType(a.Config)
+
+	a.tokenCtrl = newTokenController(a.Config, tokenResp)
+	a.authCtrl = newAuthController(a.Config, authResp, tokenResp)
 
 	return a
 }
 
-func DefaultConfig() *Config {
-	return &Config{
-		AccessLifeTime:       3600,
-		AuthCodeLifetime:     60,
-		RefreshTokenLifetime: 3600,
-		AllowCredentialsBody: false,
-		AllowImplicit:        false,
-		StateParamRequired:   false,
-	}
+func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool) *Response {
+	ar := a.parseAuthRequest(r)
+	resp := a.authCtrl.handleAuthorize(ar, isAuthorized)
+
+	return resp
 }
 
-func (a *AuthorizeServer) UseJWTAccessTokens(store PublicKeyStore) {
-	a.stores.publicKey = store
-}
+func (a *AuthServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request) (Client, []string, *Response) {
+	ar := a.parseAuthRequest(r)
 
-func (a *AuthorizeServer) AddGrant(name string, grant GrantType) {
-	a.grant[name] = grant
-}
-
-func (a *AuthorizeServer) AddAuthCodeGrant(store AuthCodeStore) {
-	a.stores.code = store
-	a.grant[AUTHORIZATION_CODE] = newAuthCodeGrant(store)
-}
-
-func (a *AuthorizeServer) AddClientGrant() {
-	a.grant[CLIENT_CREDENTIALS] = newClientGrant(a.stores.authServer)
-}
-
-func (a *AuthorizeServer) AddPasswordGrant(store UserStore) {
-	a.stores.user = store
-	a.grant[PASSWORD] = newPasswordGrant(store)
-}
-
-func (a *AuthorizeServer) AddRefreshGrant(store RefreshTokenStore) {
-	a.stores.refresh = store
-	a.grant[REFRESH_TOKEN] = newRefreshGrant(store)
-}
-
-func (a *AuthorizeServer) SetDefaultScopes(ids ...string) {
-	a.Config.DefaultScopes = ids
-}
-
-func (a *AuthorizeServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool) {
-	ctrl := a.getAuthController()
-
-	ar := a.parseAuthorizeRequest(r)
-	resp := ctrl.handleAuthorize(ar, isAuthorized)
-
-	resp.Write(w)
-}
-
-func (a *AuthorizeServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request, fn ValidAuthorize) {
-	ctrl := a.getAuthController()
-	ar := a.parseAuthorizeRequest(r)
-
-	client, scopes, _, resp := ctrl.validateAuthorizeRequest(ar)
+	client, scopes, _, resp := a.authCtrl.validateAuthorizeRequest(ar)
 	if resp != nil {
-		resp.Write(w)
-		return
+		return nil, nil, resp
 	}
 
-	fn(client, scopes)
+	return client, scopes, newRespData(nil)
 }
 
-func (a *AuthorizeServer) Token(w http.ResponseWriter, r *http.Request) {
-	ctrl := a.getTokenController()
+func (a *AuthServer) Token(w http.ResponseWriter, r *http.Request) *Response {
 	if strings.ToLower(r.Method) != "post" {
-		errMustBePostMetthod.Write(w)
-		return
+		return errMustBePostMetthod
 	}
 
 	tr, resp := a.parseTokenRequest(r)
 	if resp != nil {
-		resp.Write(w)
-		return
+		return resp
 	}
 
-	resp = ctrl.handleAccessToken(tr)
-	resp.Write(w)
+	return a.tokenCtrl.handleAccessToken(tr)
 }
 
-func (a *AuthorizeServer) parseTokenRequest(r *http.Request) (*TokenRequest, *response) {
+func (a *AuthServer) parseTokenRequest(r *http.Request) (*TokenRequest, *Response) {
 	clientID, clientSecret, resp := a.getCredentialsFromHttp(r, a.Config)
 	if resp != nil {
 		return nil, resp
@@ -139,7 +79,7 @@ func (a *AuthorizeServer) parseTokenRequest(r *http.Request) (*TokenRequest, *re
 	return tr, nil
 }
 
-func (a *AuthorizeServer) parseAuthorizeRequest(r *http.Request) *authorizeRequest {
+func (a *AuthServer) parseAuthRequest(r *http.Request) *authorizeRequest {
 	ar := &authorizeRequest{
 		state:        r.FormValue("state"),
 		redirectURI:  r.FormValue("redirect_uri"),
@@ -151,7 +91,7 @@ func (a *AuthorizeServer) parseAuthorizeRequest(r *http.Request) *authorizeReque
 	return ar
 }
 
-func (a *AuthorizeServer) getCredentialsFromHttp(r *http.Request, config *Config) (string, string, *response) {
+func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig) (string, string, *Response) {
 	headerAuth := r.Header.Get("Authorization")
 
 	switch {
@@ -186,41 +126,12 @@ func (a *AuthorizeServer) getCredentialsFromHttp(r *http.Request, config *Config
 	return "", "", errCredentailsRequired
 }
 
-func (a *AuthorizeServer) getAuthController() *authController {
-	if a.authCtrl == nil {
-		a.authCtrl = newAuthController(
-			a.Config,
-			a.stores.authServer,
-			newAuthCodeResponseType(a.stores.code, a.Config),
-			a.getRespType(),
-		)
+func (a *AuthServer) getTokenRespType() ResponseType {
+	respType := newTokenRespType(a.Config)
+
+	if a.Config.PublicKeyStore != nil {
+		return newJWTResponseType(respType, a.Config)
 	}
 
-	return a.authCtrl
-}
-
-func (a *AuthorizeServer) getTokenController() *tokenController {
-	if a.tokenCtrl == nil {
-		a.tokenCtrl = newTokenController(
-			a.Config,
-			a.stores.authServer,
-			a.grant,
-			a.getRespType(),
-		)
-	}
-
-	return a.tokenCtrl
-}
-
-func (a *AuthorizeServer) getRespType() ResponseType {
-	if a.tokenRespType == nil {
-		if a.stores.publicKey != nil {
-			a.tokenRespType = newJWTResponseType(a.stores.publicKey, a.stores.authServer, a.stores.refresh, a.Config)
-
-		} else {
-			a.tokenRespType = newTokenResponseType(a.stores.authServer, a.stores.refresh, a.Config)
-		}
-	}
-
-	return a.tokenRespType
+	return respType
 }

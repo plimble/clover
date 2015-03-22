@@ -5,18 +5,16 @@ import (
 	"strings"
 )
 
-type tokenResponseType struct {
-	tokenStore   AccessTokenStore
-	refreshStore RefreshTokenStore
-	config       *Config
-	unik         unik.Generator
+type tokenRespType struct {
+	config *AuthConfig
+	unik   unik.Generator
 }
 
-func newTokenResponseType(tokenStore AccessTokenStore, refreshStore RefreshTokenStore, config *Config) *tokenResponseType {
-	return &tokenResponseType{tokenStore, refreshStore, config, unik.NewUUID1Base64()}
+func newTokenRespType(config *AuthConfig) *tokenRespType {
+	return &tokenRespType{config, unik.NewUUID1Base64()}
 }
 
-func (rt *tokenResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *response {
+func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
 	at, resp := rt.createAccessToken(client.GetClientID(), client.GetUserID(), scopes)
 	if resp != nil {
 		return resp
@@ -24,10 +22,10 @@ func (rt *tokenResponseType) GetAuthResponse(ar *authorizeRequest, client Client
 
 	data := rt.createRespData(at.AccessToken, rt.config.AuthCodeLifetime, scopes, "", ar.state)
 
-	return NewRespData(data).SetRedirect(ar.redirectURI, ar.responseType, ar.state)
+	return newRespData(data).setRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
-func (rt *tokenResponseType) GetAccessToken(td *TokenData, includeRefresh bool) *response {
+func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
 	at, resp := rt.createAccessToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
 	if resp != nil {
 		return resp
@@ -40,10 +38,10 @@ func (rt *tokenResponseType) GetAccessToken(td *TokenData, includeRefresh bool) 
 
 	data := rt.createRespData(at.AccessToken, rt.config.AccessLifeTime, at.Scope, refresh, "")
 
-	return NewRespData(data)
+	return newRespData(data)
 }
 
-func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes []string) (*AccessToken, *response) {
+func (rt *tokenRespType) createAccessToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
 	at := &AccessToken{
 		AccessToken: rt.generateToken(),
 		ClientID:    clientID,
@@ -52,15 +50,15 @@ func (rt *tokenResponseType) createAccessToken(clientID, userID string, scopes [
 		Scope:       scopes,
 	}
 
-	if err := rt.tokenStore.SetAccessToken(at); err != nil {
+	if err := rt.config.AuthServerStore.SetAccessToken(at); err != nil {
 		return nil, errInternal(err.Error())
 	}
 
 	return at, nil
 }
 
-func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh bool) (string, *response) {
-	if !includeRefresh || rt.refreshStore == nil || rt.config.RefreshTokenLifetime < 1 {
+func (rt *tokenRespType) createRefreshToken(at *AccessToken, includeRefresh bool) (string, *Response) {
+	if !includeRefresh || rt.config.RefreshTokenStore == nil || rt.config.RefreshTokenLifetime < 1 {
 		return "", nil
 	}
 
@@ -72,22 +70,18 @@ func (rt *tokenResponseType) createRefreshToken(at *AccessToken, includeRefresh 
 		Scope:        at.Scope,
 	}
 
-	if err := rt.refreshStore.SetRefreshToken(r); err != nil {
+	if err := rt.config.RefreshTokenStore.SetRefreshToken(r); err != nil {
 		return "", errInternal(err.Error())
 	}
 
 	return r.RefreshToken, nil
 }
 
-func (rt *tokenResponseType) generateToken() string {
+func (rt *tokenRespType) generateToken() string {
 	return rt.unik.Generate()
 }
 
-func (rt *tokenResponseType) SetRefreshStore(store RefreshTokenStore) {
-	rt.refreshStore = store
-}
-
-func (rt *tokenResponseType) createRespData(token string, expiresIn int, scopes []string, refresh, state string) respData {
+func (rt *tokenRespType) createRespData(token string, expiresIn int, scopes []string, refresh, state string) respData {
 	data := respData{
 		"access_token": token,
 		"token_type":   "bearer",

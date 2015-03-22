@@ -61,16 +61,17 @@ func main() {
 	}
 
 	store := setupStore(session)
-	config := clover.DefaultConfig()
-	config.AllowImplicit = true
-	auth := clover.NewAuthServer(store, config)
-	auth.AddClientGrant()
-	auth.AddPasswordGrant(store)
-	auth.AddRefreshGrant(store)
-	auth.AddAuthCodeGrant(store)
-	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	authConfig := clover.NewAuthConfig(store)
+	authConfig.AllowImplicit = true
+	authConfig.AddClientGrant()
+	authConfig.AddPasswordGrant(store)
+	authConfig.AddRefreshGrant(store)
+	authConfig.AddAuthCodeGrant(store)
+	authConfig.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	auth := clover.NewAuthServer(authConfig)
 
-	resource := clover.NewResourceServer(store)
+	resourceconfig := clover.NewResourceConfig(store)
+	resource := clover.NewResourceServer(resourceconfig)
 
 	app := &App{
 		auth:     auth,

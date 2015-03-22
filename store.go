@@ -105,11 +105,3 @@ type PublicKey struct {
 	PrivateKey string `json:"private_key" bson:"pr"`
 	Algorithm  string `json:"algorithm" bson:"a"`
 }
-
-type stores struct {
-	authServer AuthServerStore
-	user       UserStore
-	refresh    RefreshTokenStore
-	code       AuthCodeStore
-	publicKey  PublicKeyStore
-}
