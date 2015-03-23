@@ -6,16 +6,16 @@ import (
 	"github.com/plimble/unik"
 )
 
-type authCodeResponseType struct {
+type codeRespType struct {
 	config *AuthConfig
 	unik   unik.Generator
 }
 
-func newAuthCodeResponseType(config *AuthConfig) *authCodeResponseType {
-	return &authCodeResponseType{config, unik.NewUUIDV1()}
+func newCodeRespType(config *AuthConfig) *codeRespType {
+	return &codeRespType{config, unik.NewUUIDV1()}
 }
 
-func (rt *authCodeResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
+func (rt *codeRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
 	ac, resp := rt.createAuthCode(client, scopes, ar.redirectURI)
 	if resp != nil {
 		return resp
@@ -26,7 +26,7 @@ func (rt *authCodeResponseType) GetAuthResponse(ar *authorizeRequest, client Cli
 	return newRespData(data).setRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
-func (rt *authCodeResponseType) createAuthCode(client Client, scopes []string, redirectURI string) (*AuthorizeCode, *Response) {
+func (rt *codeRespType) createAuthCode(client Client, scopes []string, redirectURI string) (*AuthorizeCode, *Response) {
 	ac := &AuthorizeCode{
 		Code:        rt.generateAuthCode(),
 		ClientID:    client.GetClientID(),
@@ -43,14 +43,14 @@ func (rt *authCodeResponseType) createAuthCode(client Client, scopes []string, r
 	return ac, nil
 }
 
-func (rt *authCodeResponseType) generateAuthCode() string {
+func (rt *codeRespType) generateAuthCode() string {
 	code := rt.unik.Generate()
 	hasher := sha512.New()
 	hasher.Write([]byte(code))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func (rt *authCodeResponseType) createRespData(code, state string) respData {
+func (rt *codeRespType) createRespData(code, state string) respData {
 	data := respData{
 		"code": code,
 	}

@@ -18,7 +18,7 @@ func NewAuthServer(config *AuthConfig) *AuthServer {
 	}
 
 	tokenResp := a.getTokenRespType()
-	authResp := newAuthCodeResponseType(a.Config)
+	authResp := newCodeRespType(a.Config)
 
 	a.tokenCtrl = newTokenController(a.Config, tokenResp)
 	a.authCtrl = newAuthController(a.Config, authResp, tokenResp)

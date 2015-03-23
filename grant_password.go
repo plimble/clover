@@ -19,9 +19,8 @@ func (g *passwordGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	}
 
 	return &GrantData{
-		ClientID: "",
-		UserID:   uid,
-		Scope:    scopes,
+		UserID: uid,
+		Scope:  scopes,
 	}, nil
 }
 

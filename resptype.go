@@ -6,12 +6,6 @@ const (
 	RESP_TPYE_JWT   = "jwt"
 )
 
-// type ResponseType interface {
-// 	GetAccessToken(td *TokenData, a *AuthorizeServer, includeRefresh bool) *Response
-// 	GetAuthorizeResponse(client Client, scopes []string, ar *authorizeRequest, a *AuthorizeServer) *Response
-// 	GetResponseType() string
-// }
-
 type ResponseType interface {
 	AuthRespType
 	TokenRespType

@@ -43,24 +43,24 @@ func (a *authController) handleAuthorize(ar *authorizeRequest, isAuthorized bool
 func (a *authController) validateAuthRequest(ar *authorizeRequest) *Response {
 	var resp *Response
 
-	if resp = a.validateAuthClientID(ar); resp != nil {
+	if resp = a.validateClientID(ar); resp != nil {
 		return resp
 	}
 
-	if resp = a.validateAuthRedirectURI(ar); resp != nil {
+	if resp = a.validateRedirectURI(ar); resp != nil {
 		return resp
 	}
 
-	if resp = a.validateAuthState(ar); resp != nil {
+	if resp = a.validateState(ar); resp != nil {
 		return resp
 	}
 
-	if resp = a.validateAuthRespType(ar); resp != nil {
+	if resp = a.validateRespType(ar); resp != nil {
 		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
 		return resp
 	}
 
-	if resp = a.validateAuthScope(ar); resp != nil {
+	if resp = a.validateScope(ar); resp != nil {
 		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
 		return resp
 	}
@@ -68,7 +68,7 @@ func (a *authController) validateAuthRequest(ar *authorizeRequest) *Response {
 	return nil
 }
 
-func (a *authController) validateAuthClientID(ar *authorizeRequest) *Response {
+func (a *authController) validateClientID(ar *authorizeRequest) *Response {
 	var err error
 
 	if ar.clientID == "" {
@@ -84,7 +84,7 @@ func (a *authController) validateAuthClientID(ar *authorizeRequest) *Response {
 	return nil
 }
 
-func (a *authController) validateAuthState(ar *authorizeRequest) *Response {
+func (a *authController) validateState(ar *authorizeRequest) *Response {
 	if a.config.StateParamRequired && ar.state == "" {
 		return errStateRequired
 	}
@@ -93,7 +93,7 @@ func (a *authController) validateAuthState(ar *authorizeRequest) *Response {
 }
 
 // Make sure a valid redirect_uri was supplied. If specified, it must match the clientData URI.
-func (a *authController) validateAuthRedirectURI(ar *authorizeRequest) *Response {
+func (a *authController) validateRedirectURI(ar *authorizeRequest) *Response {
 	if ar.redirectURI == "" {
 		if ar.client.GetRedirectURI() == "" {
 			return errNoRedirectURI
@@ -109,7 +109,7 @@ func (a *authController) validateAuthRedirectURI(ar *authorizeRequest) *Response
 	return nil
 }
 
-func (a *authController) validateAuthRespType(ar *authorizeRequest) *Response {
+func (a *authController) validateRespType(ar *authorizeRequest) *Response {
 	switch ar.responseType {
 	case "":
 		return errInvalidRespType
@@ -134,7 +134,7 @@ func (a *authController) validateAuthRespType(ar *authorizeRequest) *Response {
 	return nil
 }
 
-func (a *authController) validateAuthScope(ar *authorizeRequest) *Response {
+func (a *authController) validateScope(ar *authorizeRequest) *Response {
 	scopes := strings.Fields(ar.scope)
 
 	if len(scopes) == 0 {
