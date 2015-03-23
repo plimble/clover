@@ -2,7 +2,6 @@ package clover
 
 import (
 	"encoding/json"
-	"github.com/plimble/clover"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"net/url"
@@ -20,14 +19,16 @@ func buildRefreshTokenForm(refreshToken string) url.Values {
 }
 
 func TestRefreshToken(t *testing.T) {
-	c := newTestServer()
+	store := newTestStore()
+	c := newTestServer(store)
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildPasswordForm())
 
 	// Get Token
-	c.auth.Token(w, r)
+	c.auth.Token(w, r).Write(w)
 	assert.Equal(t, 200, w.Code)
+
 	var resJSON map[string]interface{}
 	err := json.Unmarshal([]byte(w.Body.String()), &resJSON)
 	assert.NoError(t, err)
@@ -35,15 +36,15 @@ func TestRefreshToken(t *testing.T) {
 	// Get Refresh Token
 	w = httptest.NewRecorder()
 	r = newTestRequest("http://localhost", "", buildRefreshTokenForm(resJSON["refresh_token"].(string)))
-	c.auth.Token(w, r)
+	c.auth.Token(w, r).Write(w)
+	assert.Equal(t, 200, w.Code)
 
-	var resAt *clover.AccessToken
 	token, err := getTokenFromBody(w)
+	assert.NoError(t, err)
 
-	r = newTestRequest("http://localhost", "", buildClientTokenForm(token))
-	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		resAt = at
-	})
-
-	assert.NotNil(t, resAt)
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
+	assert.False(t, resp.IsError())
+	assert.False(t, resp.IsRedirect())
+	assert.Equal(t, ac.AccessToken, token)
 }

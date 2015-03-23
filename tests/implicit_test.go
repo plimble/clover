@@ -1,7 +1,6 @@
 package clover
 
 import (
-	"github.com/plimble/clover"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"net/url"
@@ -11,26 +10,27 @@ import (
 func buildImplicitForm() url.Values {
 	form := url.Values{}
 	form.Set("client_id", "1001")
+	form.Set("client_secret", "xyz")
 	form.Set("response_type", "token")
 
 	return form
 }
 
 func TestImplicitAuthorize(t *testing.T) {
-	c := newTestServer()
+	store := newTestStore()
+	c := newTestServer(store)
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildImplicitForm())
 
-	c.auth.Authorize(w, r, true)
+	c.auth.Authorize(w, r, true).Write(w)
 
 	token, err := getTokenFromUrl(w)
 	assert.NoError(t, err)
-	var resAt *clover.AccessToken
 
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(token))
-	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		resAt = at
-	})
-	assert.NotNil(t, resAt)
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
+	assert.False(t, resp.IsError())
+	assert.False(t, resp.IsRedirect())
+	assert.Equal(t, ac.AccessToken, token)
 }

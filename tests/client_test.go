@@ -1,7 +1,6 @@
 package clover
 
 import (
-	"github.com/plimble/clover"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"net/url"
@@ -12,59 +11,60 @@ import (
 func buildClientForm() url.Values {
 	form := url.Values{}
 	form.Set("client_id", "1001")
+	form.Set("client_secret", "xyz")
 	form.Set("response_type", "code")
 
 	return form
 }
 
 func TestClientAuthorize(t *testing.T) {
-	c := newTestServer()
+	store := newTestStore()
+	c := newTestServer(store)
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildClientForm())
 
 	// Authorize
-	c.auth.Authorize(w, r, true)
+	c.auth.Authorize(w, r, true).Write(w)
 	assert.Equal(t, 302, w.Code)
 
 	// Get Token
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(""))
-	c.auth.Token(w, r)
+	r = newTestRequest("http://localhost", "", buildClientTokenForm(""))
+	c.auth.Token(w, r).Write(w)
 
 	assert.Equal(t, 302, w.Code)
 	validateResponseToken(t, w.Body.String())
 
 	token, err := getTokenFromBody(w)
 	assert.NoError(t, err)
-	var resAt *clover.AccessToken
 
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(token))
-	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		resAt = at
-	})
-	assert.NotNil(t, resAt)
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	at, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
+	assert.False(t, resp.IsError())
+	assert.False(t, resp.IsRedirect())
+	assert.Equal(t, at.AccessToken, token)
 }
 
 func TestClientTokenAuthorize(t *testing.T) {
-	c := newTestServer()
+	store := newTestStore()
+	c := newTestServer(store)
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildClientTokenForm(""))
 
 	// Authorize
-	c.auth.Authorize(w, r, true)
+	c.auth.Authorize(w, r, true).Write(w)
 
 	assert.Equal(t, 302, w.Code)
-	strings.Contains(w.HeaderMap["Location"][0], "access_token=")
-	strings.Contains(w.HeaderMap["Location"][0], "expires=")
+	strings.Contains("http://localhost", "access_token=")
+	strings.Contains("http://localhost", "expires=")
 
 	token, err := getTokenFromUrl(w)
 	assert.NoError(t, err)
-	var resAt *clover.AccessToken
 
-	r = newTestRequest(w.HeaderMap["Location"][0], "", buildClientTokenForm(token))
-	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		resAt = at
-	})
-	assert.NotNil(t, resAt)
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
+	assert.False(t, resp.IsError())
+	assert.False(t, resp.IsRedirect())
+	assert.Equal(t, ac.AccessToken, token)
 }

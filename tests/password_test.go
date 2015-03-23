@@ -1,7 +1,6 @@
 package clover
 
 import (
-	"github.com/plimble/clover"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"net/url"
@@ -21,24 +20,24 @@ func buildPasswordForm() url.Values {
 }
 
 func TestPasswordAuthorize(t *testing.T) {
-	c := newTestServer()
+	store := newTestStore()
+	c := newTestServer(store)
 
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildPasswordForm())
 
 	// Get Token
-	c.auth.Token(w, r)
+	c.auth.Token(w, r).Write(w)
 
 	assert.Equal(t, 200, w.Code)
 	validateResponseToken(t, w.Body.String())
 
 	token, err := getTokenFromBody(w)
 	assert.NoError(t, err)
-	var resAt *clover.AccessToken
 
-	r = newTestRequest("http://localhost", "", buildClientTokenForm(token))
-	c.resource.VerifyAccessToken(w, r, []string{"read_my_timeline"}, func(at *clover.AccessToken) {
-		resAt = at
-	})
-	assert.NotNil(t, resAt)
+	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
+	assert.False(t, resp.IsError())
+	assert.False(t, resp.IsRedirect())
+	assert.Equal(t, ac.AccessToken, token)
 }

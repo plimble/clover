@@ -15,30 +15,39 @@ import (
 )
 
 type testApp struct {
-	auth     *clover.AuthorizeServer
+	auth     *clover.AuthServer
 	resource *clover.ResourceServer
 }
 
-func newTestServer() *testApp {
-	config := &clover.Config{
-		AccessLifeTime:       1,
-		AuthCodeLifetime:     60,
-		RefreshTokenLifetime: 30,
-		AllowCredentialsBody: true,
-		AllowImplicit:        true,
-		StateParamRequired:   false,
-	}
+func newTestServer(store *memory.Storage) *testApp {
+	// config := &clover.Config{
+	// 	AccessLifeTime:       1,
+	// 	AuthCodeLifetime:     60,
+	// 	RefreshTokenLifetime: 30,
+	// 	AllowCredentialsBody: true,
+	// 	AllowImplicit:        true,
+	// 	StateParamRequired:   false,
+	// }
 
-	store := newTestStore()
-	auth := clover.NewAuthServer(store, config)
-	auth.AddClientGrant()
-	auth.AddPasswordGrant(store)
-	auth.AddRefreshGrant(store)
-	auth.AddAuthCodeGrant(store)
+	config := clover.NewAuthConfig(store)
+	config.AllowImplicit = true
+	config.AddClientGrant()
+	config.AddPasswordGrant(store)
+	config.AddRefreshGrant(store)
+	config.AddAuthCodeGrant(store)
 
-	auth.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	config.AllowCredentialsBody = true
+	config.AllowImplicit = true
+	config.AccessLifeTime = 1
+	config.AuthCodeLifetime = 60
+	config.RefreshTokenLifetime = 30
 
-	resource := clover.NewResourceServer(store)
+	config.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	auth := clover.NewAuthServer(config)
+
+	resourceconfig := clover.NewResourceConfig(store)
+	resource := clover.NewResourceServer(resourceconfig)
+
 	return &testApp{auth, resource}
 }
 
@@ -113,5 +122,4 @@ func validateResponseToken(t *testing.T, body string) {
 	assert.Equal(t, resJSON["token_type"], "bearer")
 	assert.Equal(t, resJSON["expires_in"], 1)
 	assert.NotEmpty(t, resJSON["access_token"])
-	// assert.NotEmpty(t, resJSON["refresh_token"])
 }
