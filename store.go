@@ -1,7 +1,14 @@
 package clover
 
-//go:generate mockery -name AuthServerStore -inpkg
-//go:generate mockery -name PublicKeyStore -inpkg
+//go:generate mockery -name allstore -inpkg
+
+type allstore interface {
+	AuthServerStore
+	UserStore
+	RefreshTokenStore
+	AuthCodeStore
+	PublicKeyStore
+}
 
 type AuthServerStore interface {
 	GetClient(id string) (Client, error)

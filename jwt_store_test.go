@@ -83,9 +83,9 @@ func genJWTToken(algo jwt.SigningMethod, key string, expires int64) string {
 }
 
 func TestGetAccessTokenRS512(t *testing.T) {
-	pubStore := NewMockPublicKeyStore()
+	pubStore := NewMockallstore()
 
-	s := newJWTAccessTokenStore(pubStore)
+	s := newJWTTokenStore(pubStore)
 
 	expires := time.Now().Add(time.Minute * 1).Unix()
 	token := genJWTToken(jwt.SigningMethodRS512, privateKey, expires)
@@ -107,9 +107,9 @@ func TestGetAccessTokenRS512(t *testing.T) {
 }
 
 func TestGetAccessTokenHS512(t *testing.T) {
-	pubStore := NewMockPublicKeyStore()
+	pubStore := NewMockallstore()
 
-	s := newJWTAccessTokenStore(pubStore)
+	s := newJWTTokenStore(pubStore)
 
 	expires := time.Now().Add(time.Minute * 1).Unix()
 	token := genJWTToken(jwt.SigningMethodHS512, hmacKey, expires)
