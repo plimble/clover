@@ -11,7 +11,7 @@ func newClientGrant(store AuthServerStore) GrantType {
 func (g *clientGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	client, err := g.store.GetClient(tr.ClientID)
 	if err != nil {
-		return nil, errInternal(err.Error())
+		return nil, errInvalidClientCredentail
 	}
 
 	if client.GetClientSecret() != tr.ClientSecret {

@@ -1,5 +1,7 @@
 package clover
 
+//go:generate mockery -name ResponseType -inpkg
+
 const (
 	RESP_TYPE_CODE  = "code"
 	RESP_TYPE_TOKEN = "token"

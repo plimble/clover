@@ -48,6 +48,22 @@ func (r *Response) setRedirect(uri, respType, state string) *Response {
 	return r
 }
 
+func (r *Response) clone() *Response {
+	newR := &Response{
+		code:        r.code,
+		isFragment:  r.isFragment,
+		redirectURI: r.redirectURI,
+		isErr:       r.isErr,
+		data:        make(map[string]interface{}),
+	}
+
+	for k, v := range r.data {
+		newR.data[k] = v
+	}
+
+	return newR
+}
+
 func (r *Response) Write(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")

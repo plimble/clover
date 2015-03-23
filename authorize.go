@@ -28,7 +28,7 @@ func newAuthController(config *AuthConfig, authRespType, tokenRespType AuthRespT
 func (a *authController) handleAuthorize(ar *authorizeRequest, isAuthorized bool) *Response {
 	// the user declined access to the client's application
 	if !isAuthorized {
-		return errUserDeniedAccess.setRedirect(ar.redirectURI, ar.responseType, ar.state)
+		return errUserDeniedAccess.clone().setRedirect(ar.redirectURI, ar.responseType, ar.state)
 	}
 
 	//validate request
@@ -56,13 +56,11 @@ func (a *authController) validateAuthRequest(ar *authorizeRequest) *Response {
 	}
 
 	if resp = a.validateRespType(ar); resp != nil {
-		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return resp
+		return resp.clone().setRedirect(ar.redirectURI, ar.responseType, ar.state)
 	}
 
 	if resp = a.validateScope(ar); resp != nil {
-		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return resp
+		return resp.clone().setRedirect(ar.redirectURI, ar.responseType, ar.state)
 	}
 
 	return nil
