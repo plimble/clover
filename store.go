@@ -5,10 +5,6 @@ package clover
 
 type AuthServerStore interface {
 	GetClient(id string) (Client, error)
-	AccessTokenStore
-}
-
-type AccessTokenStore interface {
 	SetAccessToken(accessToken *AccessToken) error
 	GetAccessToken(at string) (*AccessToken, error)
 }

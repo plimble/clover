@@ -36,12 +36,12 @@ func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthori
 func (a *AuthServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request) (Client, []string, *Response) {
 	ar := a.parseAuthRequest(r)
 
-	client, scopes, _, resp := a.authCtrl.validateAuthorizeRequest(ar)
+	resp := a.authCtrl.validateAuthRequest(ar)
 	if resp != nil {
 		return nil, nil, resp
 	}
 
-	return client, scopes, newRespData(nil)
+	return ar.client, ar.scopeArr, newResp()
 }
 
 func (a *AuthServer) Token(w http.ResponseWriter, r *http.Request) *Response {

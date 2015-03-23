@@ -6,23 +6,23 @@ import (
 	"strings"
 )
 
-type jwtAccessTokenStore struct {
+type jwtTokenStore struct {
 	publicKeyStore PublicKeyStore
 }
 
-func newJWTAccessTokenStore(publicKeyStore PublicKeyStore) *jwtAccessTokenStore {
-	return &jwtAccessTokenStore{publicKeyStore}
+func newJWTTokenStore(publicKeyStore PublicKeyStore) *jwtTokenStore {
+	return &jwtTokenStore{publicKeyStore}
 }
 
-func (s *jwtAccessTokenStore) GetClient(id string) (Client, error) {
+func (s *jwtTokenStore) GetClient(id string) (Client, error) {
 	return nil, nil
 }
 
-func (s *jwtAccessTokenStore) SetAccessToken(accessToken *AccessToken) error {
+func (s *jwtTokenStore) SetAccessToken(accessToken *AccessToken) error {
 	return nil
 }
 
-func (s *jwtAccessTokenStore) GetAccessToken(accesstoken string) (*AccessToken, error) {
+func (s *jwtTokenStore) GetAccessToken(accesstoken string) (*AccessToken, error) {
 	token, err := jwt.Parse(accesstoken, func(token *jwt.Token) (interface{}, error) {
 		key, err := s.publicKeyStore.GetKey(token.Claims["aud"].(string))
 		if err != nil {

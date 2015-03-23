@@ -18,10 +18,9 @@ const (
 type Response struct {
 	code        int
 	data        map[string]interface{}
-	inFragment  bool
+	isFragment  bool
 	redirectURI string
 	isErr       bool
-	header      map[string]string
 }
 
 type respData map[string]interface{}
@@ -39,7 +38,7 @@ func (r *Response) setRedirect(uri, respType, state string) *Response {
 	r.code = 302
 
 	if respType == RESP_TYPE_TOKEN {
-		r.inFragment = true
+		r.isFragment = true
 	}
 
 	if state != "" {
@@ -49,16 +48,10 @@ func (r *Response) setRedirect(uri, respType, state string) *Response {
 	return r
 }
 
-func (r *Response) setHeader(header map[string]string) {
-	r.header = header
-}
-
 func (r *Response) Write(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
-	for k, v := range r.header {
-		w.Header().Set(k, v)
-	}
+
 	if r.code == 302 {
 		r.redirect(w)
 		return
@@ -81,7 +74,7 @@ func (r *Response) redirect(w http.ResponseWriter) {
 	for key, desc := range r.data {
 		q.Set(key, fmt.Sprint(desc))
 	}
-	if r.inFragment {
+	if r.isFragment {
 		u.RawQuery = ""
 		u.Fragment, err = url.QueryUnescape(q.Encode())
 		if err != nil {
@@ -94,6 +87,12 @@ func (r *Response) redirect(w http.ResponseWriter) {
 
 	w.Header().Set("Location", u.String())
 	w.WriteHeader(302)
+}
+
+func newResp() *Response {
+	return &Response{
+		code: 200,
+	}
 }
 
 func newRespErr(code int, key, desc string) *Response {

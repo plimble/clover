@@ -16,6 +16,9 @@ type authorizeRequest struct {
 	clientID     string
 	redirectURI  string
 	state        string
+	client       Client
+	scopeArr     []string
+	respType     AuthRespType
 }
 
 func newAuthController(config *AuthConfig, authRespType, tokenRespType AuthRespType) *authController {
@@ -23,66 +26,65 @@ func newAuthController(config *AuthConfig, authRespType, tokenRespType AuthRespT
 }
 
 func (a *authController) handleAuthorize(ar *authorizeRequest, isAuthorized bool) *Response {
-	//re-validate
-	client, scopes, respType, resp := a.validateAuthorizeRequest(ar)
-	if resp != nil {
-		return resp
-	}
-
 	// the user declined access to the client's application
 	if !isAuthorized {
 		return errUserDeniedAccess.setRedirect(ar.redirectURI, ar.responseType, ar.state)
 	}
 
-	return respType.GetAuthResponse(ar, client, scopes)
+	//validate request
+	resp := a.validateAuthRequest(ar)
+	if resp != nil {
+		return resp
+	}
+
+	return ar.respType.GetAuthResponse(ar, ar.client, ar.scopeArr)
 }
 
-func (a *authController) validateAuthorizeRequest(ar *authorizeRequest) (Client, []string, AuthRespType, *Response) {
+func (a *authController) validateAuthRequest(ar *authorizeRequest) *Response {
 	var resp *Response
-	var client Client
-	var scopes []string
-	var respType AuthRespType
 
-	if client, resp = a.validateAuthorizeClientID(ar); resp != nil {
-		return nil, nil, nil, resp
+	if resp = a.validateAuthClientID(ar); resp != nil {
+		return resp
 	}
 
-	if resp = a.validateAuthorizeRedirectURI(ar, client); resp != nil {
-		return nil, nil, nil, resp
+	if resp = a.validateAuthRedirectURI(ar); resp != nil {
+		return resp
 	}
 
-	if resp = a.validateAuthorizeState(ar); resp != nil {
-		return nil, nil, nil, resp
+	if resp = a.validateAuthState(ar); resp != nil {
+		return resp
 	}
 
-	if respType, resp = a.validateAuthorizeResponseType(ar, client); resp != nil {
+	if resp = a.validateAuthRespType(ar); resp != nil {
 		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return nil, nil, nil, resp
+		return resp
 	}
 
-	if scopes, resp = a.validateAuthorizeScope(ar, client); resp != nil {
+	if resp = a.validateAuthScope(ar); resp != nil {
 		resp.setRedirect(ar.redirectURI, ar.responseType, ar.state)
-		return nil, nil, nil, resp
+		return resp
 	}
 
-	return client, scopes, respType, nil
+	return nil
 }
 
-func (a *authController) validateAuthorizeClientID(ar *authorizeRequest) (Client, *Response) {
+func (a *authController) validateAuthClientID(ar *authorizeRequest) *Response {
+	var err error
+
 	if ar.clientID == "" {
-		return nil, errNoClientID
+		return errNoClientID
 	}
 
 	//get client
-	client, err := a.config.AuthServerStore.GetClient(ar.clientID)
+	ar.client, err = a.config.AuthServerStore.GetClient(ar.clientID)
 	if err != nil {
-		return nil, errInvalidClientID
+		return errInvalidClientID
 	}
 
-	return client, nil
+	return nil
 }
 
-func (a *authController) validateAuthorizeState(ar *authorizeRequest) *Response {
+func (a *authController) validateAuthState(ar *authorizeRequest) *Response {
 	if a.config.StateParamRequired && ar.state == "" {
 		return errStateRequired
 	}
@@ -91,58 +93,59 @@ func (a *authController) validateAuthorizeState(ar *authorizeRequest) *Response 
 }
 
 // Make sure a valid redirect_uri was supplied. If specified, it must match the clientData URI.
-func (a *authController) validateAuthorizeRedirectURI(ar *authorizeRequest, client Client) *Response {
+func (a *authController) validateAuthRedirectURI(ar *authorizeRequest) *Response {
 	if ar.redirectURI == "" {
-		if client.GetRedirectURI() == "" {
+		if ar.client.GetRedirectURI() == "" {
 			return errNoRedirectURI
 		}
-		ar.redirectURI = client.GetRedirectURI()
+		ar.redirectURI = ar.client.GetRedirectURI()
 		return nil
 	}
 
-	if ar.redirectURI != "" && client.GetRedirectURI() != "" && client.GetRedirectURI() != ar.redirectURI {
+	if ar.redirectURI != "" && ar.client.GetRedirectURI() != "" && ar.client.GetRedirectURI() != ar.redirectURI {
 		return errRedirectMismatch
 	}
 
 	return nil
 }
 
-func (a *authController) validateAuthorizeResponseType(ar *authorizeRequest, client Client) (AuthRespType, *Response) {
+func (a *authController) validateAuthRespType(ar *authorizeRequest) *Response {
 	switch ar.responseType {
 	case "":
-		return nil, errInvalidRespType
+		return errInvalidRespType
 	case RESP_TYPE_CODE:
-		if !checkGrantType(client.GetGrantType(), AUTHORIZATION_CODE) {
-			return nil, errUnAuthorizedGrant
+		if !checkGrantType(ar.client.GetGrantType(), AUTHORIZATION_CODE) {
+			return errUnAuthorizedGrant
 		}
-		return a.authRespType, nil
+		ar.respType = a.authRespType
 	case RESP_TYPE_TOKEN:
 		if !a.config.AllowImplicit {
-			return nil, errUnSupportedImplicit
+			return errUnSupportedImplicit
 		}
 
-		if !checkGrantType(client.GetGrantType(), IMPLICIT) {
-			return nil, errUnAuthorizedGrant
+		if !checkGrantType(ar.client.GetGrantType(), IMPLICIT) {
+			return errUnAuthorizedGrant
 		}
-		return a.tokenRespType, nil
+		ar.respType = a.tokenRespType
+	default:
+		return errCodeUnSupportedGrant
 	}
 
-	return nil, errCodeUnSupportedGrant
+	return nil
 }
 
-func (a *authController) validateAuthorizeScope(ar *authorizeRequest, client Client) ([]string, *Response) {
+func (a *authController) validateAuthScope(ar *authorizeRequest) *Response {
 	scopes := strings.Fields(ar.scope)
 
-	if len(scopes) > 0 {
-		if len(client.GetScope()) == 0 || !checkScope(client.GetScope(), scopes...) {
-			return nil, errUnSupportedScope
-		}
-	} else {
-		if len(a.config.DefaultScopes) == 0 {
-			return nil, errNoScope
-		}
-		return a.config.DefaultScopes, nil
+	if len(scopes) == 0 {
+		ar.scopeArr = a.config.DefaultScopes
+		return nil
 	}
 
-	return scopes, nil
+	if len(ar.client.GetScope()) == 0 || !checkScope(ar.client.GetScope(), scopes...) {
+		return errUnSupportedScope
+	}
+
+	ar.scopeArr = scopes
+	return nil
 }

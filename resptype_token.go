@@ -15,7 +15,7 @@ func newTokenRespType(config *AuthConfig) *tokenRespType {
 }
 
 func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
-	at, resp := rt.createAccessToken(client.GetClientID(), client.GetUserID(), scopes)
+	at, resp := rt.createToken(client.GetClientID(), client.GetUserID(), scopes)
 	if resp != nil {
 		return resp
 	}
@@ -26,7 +26,7 @@ func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, sc
 }
 
 func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
-	at, resp := rt.createAccessToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
+	at, resp := rt.createToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
 	if resp != nil {
 		return resp
 	}
@@ -41,7 +41,7 @@ func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Res
 	return newRespData(data)
 }
 
-func (rt *tokenRespType) createAccessToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
+func (rt *tokenRespType) createToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
 	at := &AccessToken{
 		AccessToken: rt.generateToken(),
 		ClientID:    clientID,

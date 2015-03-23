@@ -15,5 +15,5 @@ func NewResourceConfig(authStore AuthServerStore) *ResourceConfig {
 
 func (c *ResourceConfig) UseJWTAccessTokens(store PublicKeyStore) {
 	c.PublicKeyStore = store
-	c.AuthServerStore = newJWTAccessTokenStore(store)
+	c.AuthServerStore = newJWTTokenStore(store)
 }
