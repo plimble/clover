@@ -28,7 +28,7 @@ func TestImplicitAuthorize(t *testing.T) {
 	token, err := getTokenFromUrl(w)
 	assert.NoError(t, err)
 
-	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	r = newTestRequest("http://localhost", "", buildVerifyForm(token))
 	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
 	assert.False(t, resp.IsError())
 	assert.False(t, resp.IsRedirect())

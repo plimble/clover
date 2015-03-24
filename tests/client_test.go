@@ -24,21 +24,17 @@ func TestClientAuthorize(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := newTestRequest("http://localhost", "", buildClientForm())
 
-	// Authorize
-	c.auth.Authorize(w, r, true).Write(w)
-	assert.Equal(t, 302, w.Code)
-
 	// Get Token
 	r = newTestRequest("http://localhost", "", buildClientTokenForm(""))
 	c.auth.Token(w, r).Write(w)
 
-	assert.Equal(t, 302, w.Code)
+	assert.Equal(t, 200, w.Code)
 	validateResponseToken(t, w.Body.String())
 
 	token, err := getTokenFromBody(w)
 	assert.NoError(t, err)
 
-	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	r = newTestRequest("http://localhost", "", buildVerifyForm(token))
 	at, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
 	assert.False(t, resp.IsError())
 	assert.False(t, resp.IsRedirect())
@@ -62,7 +58,7 @@ func TestClientTokenAuthorize(t *testing.T) {
 	token, err := getTokenFromUrl(w)
 	assert.NoError(t, err)
 
-	r = newTestRequest("http://localhost", "", buildAuthTokenForm(token))
+	r = newTestRequest("http://localhost", "", buildVerifyForm(token))
 	ac, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
 	assert.False(t, resp.IsError())
 	assert.False(t, resp.IsRedirect())

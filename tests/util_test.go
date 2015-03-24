@@ -20,15 +20,6 @@ type testApp struct {
 }
 
 func newTestServer(store *memory.Storage) *testApp {
-	// config := &clover.Config{
-	// 	AccessLifeTime:       1,
-	// 	AuthCodeLifetime:     60,
-	// 	RefreshTokenLifetime: 30,
-	// 	AllowCredentialsBody: true,
-	// 	AllowImplicit:        true,
-	// 	StateParamRequired:   false,
-	// }
-
 	config := clover.NewAuthConfig(store)
 	config.AllowImplicit = true
 	config.AddClientGrant()
@@ -46,6 +37,32 @@ func newTestServer(store *memory.Storage) *testApp {
 	auth := clover.NewAuthServer(config)
 
 	resourceconfig := clover.NewResourceConfig(store)
+	resource := clover.NewResourceServer(resourceconfig)
+
+	return &testApp{auth, resource}
+}
+
+func newTestServerJWT(store *memory.Storage) *testApp {
+	config := clover.NewAuthConfig(store)
+	config.AllowImplicit = true
+	config.AddClientGrant()
+	config.AddPasswordGrant(store)
+	config.AddRefreshGrant(store)
+	config.AddAuthCodeGrant(store)
+	config.UseJWTAccessTokens(store)
+
+	config.AllowCredentialsBody = true
+	config.AllowImplicit = true
+	config.AccessLifeTime = 1
+	config.AuthCodeLifetime = 60
+	config.RefreshTokenLifetime = 30
+
+	config.SetDefaultScopes("read_my_timeline", "read_my_friend")
+	auth := clover.NewAuthServer(config)
+
+	resourceconfig := clover.NewResourceConfig(store)
+	resourceconfig.UseJWTAccessTokens(store)
+
 	resource := clover.NewResourceServer(resourceconfig)
 
 	return &testApp{auth, resource}
@@ -99,6 +116,25 @@ func getTokenFromBody(w *httptest.ResponseRecorder) (string, error) {
 	var resJSON map[string]interface{}
 	err := json.Unmarshal([]byte(w.Body.String()), &resJSON)
 	return resJSON["access_token"].(string), err
+}
+
+func buildAuthTokenForm(token string) url.Values {
+	form := url.Values{}
+	form.Set("redirect_uri", "http://localhost:4000/callback")
+	form.Set("client_id", "1001")
+	form.Set("client_secret", "xyz")
+	form.Set("grant_type", "authorization_code")
+
+	if token != "" {
+		form.Set("access_token", token)
+	}
+	return form
+}
+
+func buildVerifyForm(token string) url.Values {
+	form := url.Values{}
+	form.Set("access_token", token)
+	return form
 }
 
 func buildClientTokenForm(token string) url.Values {
