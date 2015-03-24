@@ -21,7 +21,7 @@ func newJWTResponseType(config *AuthConfig) *jwtResponseType {
 	}
 }
 
-func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
+func (rt *jwtResponseType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
 	at, resp := rt.createToken(client.GetClientID(), client.GetUserID(), scopes)
 	if resp != nil {
 		return resp
@@ -32,7 +32,7 @@ func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, sc
 	return newRespData(data).setRedirect(ar.redirectURI, ar.responseType, ar.state)
 }
 
-func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
+func (rt *jwtResponseType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
 	at, resp := rt.createToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
 	if resp != nil {
 		return resp
