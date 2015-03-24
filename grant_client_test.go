@@ -99,4 +99,6 @@ func TestClientGrant_CreateAccessToken(t *testing.T) {
 	respType.On("GetAccessToken", td, false).Return(nil)
 
 	c.CreateAccessToken(td, respType)
+
+	respType.AssertExpectations(t)
 }

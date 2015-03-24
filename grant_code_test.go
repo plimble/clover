@@ -92,7 +92,7 @@ func TestCodeGrant_Validate_WithCodeExpired(t *testing.T) {
 		UserID:      "abc",
 		Scope:       []string{"1", "2"},
 		RedirectURI: "http://localhost",
-		Expires:     0,
+		Expires:     addSecondUnix(0),
 	}
 
 	tr := &TokenRequest{
@@ -135,4 +135,6 @@ func TestCodeGrant_CreateAccessToken(t *testing.T) {
 	respType.On("GetAccessToken", td, true).Return(nil)
 
 	c.CreateAccessToken(td, respType)
+
+	respType.AssertExpectations(t)
 }

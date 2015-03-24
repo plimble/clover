@@ -13,11 +13,11 @@ type jwtResponseType struct {
 	*tokenRespType
 }
 
-func newJWTResponseType(tokenRespType *tokenRespType, config *AuthConfig) *jwtResponseType {
+func newJWTResponseType(config *AuthConfig) *jwtResponseType {
 	return &jwtResponseType{
 		unik:          unik.NewUUID1Base64(),
 		config:        config,
-		tokenRespType: tokenRespType,
+		tokenRespType: newTokenRespType(config),
 	}
 }
 

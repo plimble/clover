@@ -15,7 +15,7 @@ func NewResourceServer(config *ResourceConfig) *ResourceServer {
 }
 
 func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes ...string) (*AccessToken, *Response) {
-	token, resp := getTokenFromHttp(r)
+	token, resp := s.getTokenFromHttp(r)
 	if resp != nil {
 		return nil, s.setHeader(resp, nil, w)
 	}
@@ -25,7 +25,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(errInvalidAccessToken, nil, w)
 	}
 
-	if at.Expires > 0 && isExpireUnix(at.Expires) {
+	if isExpireUnix(at.Expires) {
 		return nil, s.setHeader(errAccessTokenExpired, nil, w)
 	}
 
@@ -37,13 +37,11 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(errInsufficientScope, scopes, w)
 	}
 
-	for _, scope := range scopes {
-		if checkScope(at.Scope, scope) {
-			return at, s.setHeader(newRespData(nil), scopes, w)
-		}
+	if !checkScope(at.Scope, scopes...) {
+		return nil, s.setHeader(errInsufficientScope, scopes, w)
 	}
 
-	return nil, s.setHeader(errInsufficientScope, scopes, w)
+	return at, s.setHeader(newRespData(nil), scopes, w)
 }
 
 func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.ResponseWriter) *Response {
@@ -66,7 +64,7 @@ func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.Respo
 	return resp
 }
 
-func getTokenFromHttp(r *http.Request) (string, *Response) {
+func (s *ResourceServer) getTokenFromHttp(r *http.Request) (string, *Response) {
 	auth := r.Header.Get(`Authorization`)
 	postAuth := r.PostFormValue("access_token")
 	getAuth := r.URL.Query().Get("access_token")

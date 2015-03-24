@@ -127,11 +127,9 @@ func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig)
 }
 
 func (a *AuthServer) getTokenRespType() ResponseType {
-	respType := newTokenRespType(a.Config)
-
 	if a.Config.PublicKeyStore != nil {
-		return newJWTResponseType(respType, a.Config)
+		return newJWTResponseType(a.Config)
 	}
 
-	return respType
+	return newTokenRespType(a.Config)
 }

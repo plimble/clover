@@ -1,6 +1,7 @@
 package clover
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -36,6 +37,34 @@ func TestPasswordGrant_Validate(t *testing.T) {
 	assert.EqualValues(t, grantData, expGrantData)
 }
 
+func TestPasswordGrant_Validate_WithNotFound(t *testing.T) {
+	c, m := setUpPasswordGrant()
+
+	tr := &TokenRequest{
+		Username: "abc",
+		Password: "xyz",
+	}
+
+	m.store.On("GetUser", tr.Username, tr.Password).Return("", nil, errors.New("not found"))
+
+	grantData, resp := c.Validate(tr)
+	assert.Equal(t, errInvalidUsernamePAssword, resp)
+	assert.Nil(t, grantData)
+}
+
+func TestPasswordGrant_Validate_WithUsernamePasswordRequired(t *testing.T) {
+	c, _ := setUpPasswordGrant()
+
+	tr := &TokenRequest{
+		Username: "",
+		Password: "",
+	}
+
+	grantData, resp := c.Validate(tr)
+	assert.Equal(t, errUsernamePasswordRequired, resp)
+	assert.Nil(t, grantData)
+}
+
 func TestPasswordGrant_GetGrantType(t *testing.T) {
 	c, _ := setUpPasswordGrant()
 	grant := c.GetGrantType()
@@ -50,4 +79,6 @@ func TestPasswordGrant_CreateAccessToken(t *testing.T) {
 	respType.On("GetAccessToken", td, true).Return(nil)
 
 	c.CreateAccessToken(td, respType)
+
+	respType.AssertExpectations(t)
 }
