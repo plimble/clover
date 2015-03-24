@@ -1,7 +1,6 @@
 package clover
 
 import (
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/plimble/unik"
 	"strings"
