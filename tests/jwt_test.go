@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
-	// "fmt"
-
-	// "github.com/stretchr/testify/assert"
-	// "net/http/httptest"
 	"net/url"
 	"testing"
 )
@@ -23,16 +19,6 @@ func buildJWTForm() url.Values {
 	return form
 }
 
-func buildJWTTokenForm(token string) url.Values {
-	form := url.Values{}
-	// form.Set("client_id", "1001")
-	// form.Set("grant_type", "client_credentials")
-	if token != "" {
-		form.Set("access_token", token)
-	}
-	return form
-}
-
 func getTokenJWTFromBody(w *httptest.ResponseRecorder) (string, error) {
 	var resJSON map[string]interface{}
 	err := json.Unmarshal([]byte(w.Body.String()), &resJSON)
@@ -42,6 +28,7 @@ func getTokenJWTFromBody(w *httptest.ResponseRecorder) (string, error) {
 func TestJWT(t *testing.T) {
 	store := newTestStore()
 	store.AddHSKey("1001")
+
 	c := newTestServerJWT(store)
 
 	w := httptest.NewRecorder()
@@ -54,7 +41,6 @@ func TestJWT(t *testing.T) {
 
 	r = newTestRequest("http://localhost", "", buildVerifyForm(token))
 	_, resp := c.resource.VerifyAccessToken(w, r, "read_my_timeline")
-
 	assert.False(t, resp.IsError())
 	assert.False(t, resp.IsRedirect())
 }

@@ -21,7 +21,6 @@ type testApp struct {
 
 func newTestServer(store *memory.Storage) *testApp {
 	config := clover.NewAuthConfig(store)
-	config.AllowImplicit = true
 	config.AddClientGrant()
 	config.AddPasswordGrant(store)
 	config.AddRefreshGrant(store)
@@ -44,7 +43,6 @@ func newTestServer(store *memory.Storage) *testApp {
 
 func newTestServerJWT(store *memory.Storage) *testApp {
 	config := clover.NewAuthConfig(store)
-	config.AllowImplicit = true
 	config.AddClientGrant()
 	config.AddPasswordGrant(store)
 	config.AddRefreshGrant(store)
