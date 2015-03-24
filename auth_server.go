@@ -7,21 +7,21 @@ import (
 )
 
 type AuthServer struct {
-	Config    *AuthConfig
+	config    *AuthConfig
 	authCtrl  *authController
 	tokenCtrl *tokenController
 }
 
 func NewAuthServer(config *AuthConfig) *AuthServer {
 	a := &AuthServer{
-		Config: config,
+		config: config,
 	}
 
 	tokenResp := a.getTokenRespType()
-	authResp := newCodeRespType(a.Config)
+	authResp := newCodeRespType(a.config)
 
-	a.tokenCtrl = newTokenController(a.Config, tokenResp)
-	a.authCtrl = newAuthController(a.Config, authResp, tokenResp)
+	a.tokenCtrl = newTokenController(a.config, tokenResp)
+	a.authCtrl = newAuthController(a.config, authResp, tokenResp)
 
 	return a
 }
@@ -58,7 +58,7 @@ func (a *AuthServer) Token(w http.ResponseWriter, r *http.Request) *Response {
 }
 
 func (a *AuthServer) parseTokenRequest(r *http.Request) (*TokenRequest, *Response) {
-	clientID, clientSecret, resp := a.getCredentialsFromHttp(r, a.Config)
+	clientID, clientSecret, resp := a.getCredentialsFromHttp(r, a.config)
 	if resp != nil {
 		return nil, resp
 	}
@@ -127,9 +127,9 @@ func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig)
 }
 
 func (a *AuthServer) getTokenRespType() ResponseType {
-	if a.Config.PublicKeyStore != nil {
-		return newJWTResponseType(a.Config)
+	if a.config.PublicKeyStore != nil {
+		return newJWTResponseType(a.config)
 	}
 
-	return newTokenRespType(a.Config)
+	return newTokenRespType(a.config)
 }
