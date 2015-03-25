@@ -14,14 +14,14 @@ type mockResponseType struct {
 }
 
 func setUpCodeResponseType() (*codeRespType, *mockResponseType) {
-	mu := mock_unik.NewMockGenerator()
-	mu.On("Generate").Return("1")
-
 	store := NewMockallstore()
-	config := NewAuthConfig(store)
-	config.AddAuthCodeGrant(store)
 	mock := &mockResponseType{store}
 
+	config := NewAuthConfig(store)
+	config.AddAuthCodeGrant(store)
+
+	mu := mock_unik.NewMockGenerator()
+	mu.On("Generate").Return("1")
 	rt := newCodeRespType(config, mu)
 	return rt, mock
 }
