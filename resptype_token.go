@@ -13,10 +13,10 @@ type tokenRespType struct {
 	createTokenFunc createTokenFunc
 }
 
-func newTokenRespType(config *AuthConfig) *tokenRespType {
+func newTokenRespType(config *AuthConfig, unik unik.Generator) *tokenRespType {
 	rt := &tokenRespType{
 		config: config,
-		unik:   unik.NewUUID1Base64(),
+		unik:   unik,
 	}
 
 	rt.createTokenFunc = rt.createToken

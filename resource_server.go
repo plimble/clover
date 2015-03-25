@@ -25,7 +25,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(errInvalidAccessToken, nil, w)
 	}
 
-	if isExpireUnix(at.Expires) {
+	if at.Expires != 0 && isExpireUnix(at.Expires) {
 		return nil, s.setHeader(errAccessTokenExpired, nil, w)
 	}
 

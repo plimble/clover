@@ -2,6 +2,7 @@ package clover
 
 import (
 	"encoding/base64"
+	"github.com/plimble/unik"
 	"net/http"
 	"strings"
 )
@@ -18,7 +19,7 @@ func NewAuthServer(config *AuthConfig) *AuthServer {
 	}
 
 	tokenResp := a.getTokenRespType()
-	authResp := newCodeRespType(a.config)
+	authResp := newCodeRespType(a.config, unik.NewUUIDV1())
 
 	a.tokenCtrl = newTokenController(a.config, tokenResp)
 	a.authCtrl = newAuthController(a.config, authResp, tokenResp)
@@ -127,9 +128,11 @@ func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig)
 }
 
 func (a *AuthServer) getTokenRespType() ResponseType {
+	tokenRespType := newTokenRespType(a.config, unik.NewUUID1Base64())
+
 	if a.config.PublicKeyStore != nil {
-		return newJWTResponseType(a.config)
+		return newJWTResponseType(a.config, unik.NewUUID1Base64(), tokenRespType)
 	}
 
-	return newTokenRespType(a.config)
+	return tokenRespType
 }

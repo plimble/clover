@@ -169,7 +169,7 @@ func TestResourceServer_VerifyAccessToken_TokenExpire(t *testing.T) {
 
 	expat := &AccessToken{
 		AccessToken: "123",
-		Expires:     addSecondUnix(0),
+		Expires:     addSecondUnix(-1),
 	}
 
 	m.store.On("GetAccessToken", "123").Return(expat, nil)

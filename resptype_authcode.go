@@ -11,8 +11,8 @@ type codeRespType struct {
 	unik   unik.Generator
 }
 
-func newCodeRespType(config *AuthConfig) *codeRespType {
-	return &codeRespType{config, unik.NewUUIDV1()}
+func newCodeRespType(config *AuthConfig, unik unik.Generator) *codeRespType {
+	return &codeRespType{config, unik}
 }
 
 func (rt *codeRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {

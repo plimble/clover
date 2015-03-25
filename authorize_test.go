@@ -2,6 +2,7 @@ package clover
 
 import (
 	"errors"
+	"github.com/plimble/unik"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -15,8 +16,8 @@ func setupAuthCtrl() (*authController, *mockAuthCtrl) {
 	store := NewMockallstore()
 	config := NewAuthConfig(store)
 	config.AddAuthCodeGrant(store)
-	authRespType := newCodeRespType(config)
-	tokenRespType := newTokenRespType(config)
+	authRespType := newCodeRespType(config, unik.NewUUIDV1())
+	tokenRespType := newTokenRespType(config, unik.NewUUID1Base64())
 	mock := &mockAuthCtrl{store}
 	ctrl := newAuthController(config, authRespType, tokenRespType)
 
