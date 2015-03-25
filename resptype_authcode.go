@@ -1,8 +1,6 @@
 package clover
 
 import (
-	"crypto/sha512"
-	"encoding/hex"
 	"github.com/plimble/unik"
 )
 
@@ -44,10 +42,7 @@ func (rt *codeRespType) createAuthCode(client Client, scopes []string, redirectU
 }
 
 func (rt *codeRespType) generateAuthCode() string {
-	code := rt.unik.Generate()
-	hasher := sha512.New()
-	hasher.Write([]byte(code))
-	return hex.EncodeToString(hasher.Sum(nil))
+	return rt.unik.Generate()
 }
 
 func (rt *codeRespType) createRespData(code, state string) respData {
