@@ -102,14 +102,14 @@ func (t *tokenController) validateClient(tr *TokenRequest, grantData *GrantData)
 func (t *tokenController) validateScope(tr *TokenRequest, grantData *GrantData) ([]string, *Response) {
 	scopes := strings.Fields(tr.Scope)
 	if len(scopes) > 0 {
-		if grantData.Scope != nil && len(grantData.Scope) > 0 {
+		if len(grantData.Scope) > 0 {
 			if !checkScope(grantData.Scope, scopes...) {
 				return nil, errInvalidScopeRequest
 			}
 		} else {
 			return nil, errUnSupportedScope
 		}
-	} else if grantData.Scope != nil && len(grantData.Scope) > 0 {
+	} else if len(grantData.Scope) > 0 {
 		scopes = grantData.Scope
 	} else {
 		scopes = t.config.DefaultScopes

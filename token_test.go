@@ -40,6 +40,7 @@ func TestTokenCtrl_ValidateGrantType(t *testing.T) {
 		{&TokenRequest{GrantType: REFRESH_TOKEN}, REFRESH_TOKEN, nil},
 		{&TokenRequest{GrantType: AUTHORIZATION_CODE}, AUTHORIZATION_CODE, nil},
 		{&TokenRequest{GrantType: "xxx"}, "xxx", errUnSupportedGrantType},
+		{&TokenRequest{GrantType: ""}, "", errGrantTypeRequired},
 	}
 
 	for _, testCase := range testCases {
@@ -193,6 +194,32 @@ func TestTokenCtrl_ValidateToken_WithClientGrant(t *testing.T) {
 
 	resp := ctrl.validateToken(tr, td)
 	assert.Nil(t, resp)
+	m.store.AssertExpectations(t)
+}
+
+func TestTokenCtrl_ValidateToken_WithGrantUnSupport(t *testing.T) {
+	ctrl, m := setupTokenCtrl()
+
+	tr := &TokenRequest{
+		ClientID:     "1234",
+		ClientSecret: "5678",
+		GrantType:    CLIENT_CREDENTIALS,
+		Scope:        "1 2",
+	}
+
+	td := &TokenData{}
+
+	client := &DefaultClient{
+		ClientID:     "1234",
+		ClientSecret: "5678",
+		GrantType:    []string{PASSWORD},
+		Scope:        []string{"1", "2"},
+	}
+
+	m.store.On("GetClient", tr.ClientID).Return(client, nil)
+
+	resp := ctrl.validateToken(tr, td)
+	assert.Equal(t, errUnAuthorizedGrant, resp)
 	m.store.AssertExpectations(t)
 }
 
