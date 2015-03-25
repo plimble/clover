@@ -1,5 +1,7 @@
 package clover
 
+//go:generate mockery -name GrantType -inpkg
+
 const (
 	AUTHORIZATION_CODE = "authorization_code"
 	REFRESH_TOKEN      = "refresh_token"

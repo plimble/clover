@@ -87,7 +87,7 @@ func (t *tokenController) validateClient(tr *TokenRequest, grantData *GrantData)
 	var err error
 	client, err := t.config.AuthServerStore.GetClient(tr.ClientID)
 	if err != nil {
-		return errInternal(err.Error())
+		return errInvalidClientID
 	}
 
 	if grantData.ClientID != "" && grantData.ClientID != client.GetClientID() {
