@@ -5,17 +5,27 @@ import (
 	"strings"
 )
 
+type createTokenFunc func(clientID, userID string, scopes []string) (*AccessToken, *Response)
+
 type tokenRespType struct {
-	config *AuthConfig
-	unik   unik.Generator
+	config          *AuthConfig
+	unik            unik.Generator
+	createTokenFunc createTokenFunc
 }
 
 func newTokenRespType(config *AuthConfig) *tokenRespType {
-	return &tokenRespType{config, unik.NewUUID1Base64()}
+	rt := &tokenRespType{
+		config: config,
+		unik:   unik.NewUUID1Base64(),
+	}
+
+	rt.createTokenFunc = rt.createToken
+
+	return rt
 }
 
 func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
-	at, resp := rt.createToken(client.GetClientID(), client.GetUserID(), scopes)
+	at, resp := rt.createTokenFunc(client.GetClientID(), client.GetUserID(), scopes)
 	if resp != nil {
 		return resp
 	}
@@ -26,7 +36,7 @@ func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, sc
 }
 
 func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
-	at, resp := rt.createToken(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
+	at, resp := rt.createTokenFunc(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
 	if resp != nil {
 		return resp
 	}
