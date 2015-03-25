@@ -1,118 +1,137 @@
 package clover
 
 import (
-	"crypto/sha512"
-	"encoding/hex"
 	"errors"
 	"github.com/plimble/unik/mock_unik"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-type mockResponseType struct {
+type mockCodeRespType struct {
 	store *Mockallstore
+	unik  *mock_unik.MockGenerator
 }
 
-func setUpCodeResponseType() (*codeRespType, *mockResponseType) {
+func setupCodeRespType() (*codeRespType, *mockCodeRespType) {
 	store := NewMockallstore()
-	mock := &mockResponseType{store}
+	unik := mock_unik.NewMockGenerator()
 
 	config := NewAuthConfig(store)
-	config.AddAuthCodeGrant(store)
+	config.AuthCodeStore = store
 
-	mu := mock_unik.NewMockGenerator()
-	mu.On("Generate").Return("1")
-	rt := newCodeRespType(config, mu)
+	mock := &mockCodeRespType{store, unik}
+	rt := newCodeRespType(config, unik)
 	return rt, mock
 }
 
-func generateAuthRequest(resType string) *authorizeRequest {
+func TestCodeRespType_GetAuthResponse(t *testing.T) {
+	rt, m := setupCodeRespType()
+	rt.config.AuthCodeLifetime = 60
+
 	ar := &authorizeRequest{
-		state:        "0",
-		redirectURI:  "http://localhost",
-		responseType: resType,
-		scope:        "email",
-		clientID:     "1001",
-		client: &DefaultClient{
-			ClientID:     "1",
-			RedirectURI:  "http://localhost",
-			ClientSecret: "xyz",
-			GrantType:    []string{AUTHORIZATION_CODE},
-			UserID:       "1",
-			Scope:        []string{"email"},
-		},
+		redirectURI:  "http://localhost/redirect",
+		responseType: RESP_TYPE_CODE,
+		state:        "123",
 	}
 
-	return ar
-}
+	client := &DefaultClient{
+		ClientID: "123",
+		UserID:   "abc",
+	}
 
-func genTestAuthCode(rt *codeRespType, ar *authorizeRequest) *AuthorizeCode {
-	return &AuthorizeCode{
-		Code:        hashCode("1"),
-		ClientID:    ar.client.GetClientID(),
-		UserID:      ar.client.GetUserID(),
-		Expires:     addSecondUnix(rt.config.AuthCodeLifetime),
-		Scope:       []string{"email"},
+	scopes := []string{"1", "2"}
+
+	m.unik.On("Generate").Return("xyz")
+	expAc := &AuthorizeCode{
+		Code:        rt.generateAuthCode(),
+		ClientID:    client.ClientID,
+		UserID:      client.UserID,
+		Expires:     addSecondUnix(60),
+		Scope:       scopes,
 		RedirectURI: ar.redirectURI,
 	}
-}
 
-func hashCode(code string) string {
-	hasher := sha512.New()
-	hasher.Write([]byte(code))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
+	m.unik.On("Generate").Return("xyz")
+	m.store.On("SetAuthorizeCode", expAc).Return(nil)
 
-func TestGetAuthResponse(t *testing.T) {
-	rt, mock := setUpCodeResponseType()
-	ar := generateAuthRequest("code")
-	ac := genTestAuthCode(rt, ar)
-
-	mock.store.On("SetAuthorizeCode", ac).Return(nil)
-	resp := rt.GetAuthResponse(ar, ar.client, ar.client.GetScope())
-
-	assert.Equal(t, 302, resp.code)
+	resp := rt.GetAuthResponse(ar, client, scopes)
 	assert.False(t, resp.IsError())
+	assert.Equal(t, 302, resp.code)
+	assert.Equal(t, "http://localhost/redirect", resp.redirectURI)
+	assert.Equal(t, map[string]interface{}{"code": expAc.Code, "state": "123"}, resp.data)
+	assert.False(t, resp.isFragment)
 }
 
-func TestGetAuthResponseError(t *testing.T) {
-	rt, mock := setUpCodeResponseType()
-	ar := generateAuthRequest("code")
-	ac := genTestAuthCode(rt, ar)
+func TestCodeRespType_CreateAuthCode(t *testing.T) {
+	rt, m := setupCodeRespType()
+	rt.config.AuthCodeLifetime = 60
 
-	mock.store.On("SetAuthorizeCode", ac).Return(errors.New("test"))
-	resp := rt.GetAuthResponse(ar, ar.client, ar.client.GetScope())
+	client := &DefaultClient{
+		ClientID: "123",
+		UserID:   "abc",
+	}
 
-	assert.Equal(t, 500, resp.code)
-	assert.True(t, resp.IsError())
-}
+	m.unik.On("Generate").Return("xyz")
+	expAc := &AuthorizeCode{
+		Code:        rt.generateAuthCode(),
+		ClientID:    client.ClientID,
+		UserID:      client.UserID,
+		Expires:     addSecondUnix(60),
+		Scope:       []string{"1", "2"},
+		RedirectURI: "http://localhost/redirect",
+	}
 
-func TestCreateAuthCode(t *testing.T) {
-	rt, mock := setUpCodeResponseType()
-	ar := generateAuthRequest("code")
-	ac := genTestAuthCode(rt, ar)
+	m.unik.On("Generate").Return("xyz")
+	m.store.On("SetAuthorizeCode", expAc).Return(nil)
 
-	mock.store.On("SetAuthorizeCode", ac).Return(nil)
-	code, resp := rt.createAuthCode(ar.client, ar.client.GetScope(), ar.client.GetRedirectURI())
-
+	ac, resp := rt.createAuthCode(client, []string{"1", "2"}, "http://localhost/redirect")
+	assert.Equal(t, expAc, ac)
 	assert.Nil(t, resp)
-	assert.Equal(t, ac.Code, code.Code)
 }
 
-func TestCreateAuthCodeError(t *testing.T) {
-	rt, mock := setUpCodeResponseType()
-	ar := generateAuthRequest("code")
-	ac := genTestAuthCode(rt, ar)
+func TestCodeRespType_CreateAuthCode_WithError(t *testing.T) {
+	rt, m := setupCodeRespType()
+	rt.config.AuthCodeLifetime = 60
 
-	mock.store.On("SetAuthorizeCode", ac).Return(errors.New("test"))
-	code, resp := rt.createAuthCode(ar.client, ar.client.GetScope(), ar.client.GetRedirectURI())
+	client := &DefaultClient{
+		ClientID: "123",
+		UserID:   "abc",
+	}
 
-	assert.Nil(t, code)
-	assert.True(t, resp.IsError())
+	m.unik.On("Generate").Return("xyz")
+	expAc := &AuthorizeCode{
+		Code:        rt.generateAuthCode(),
+		ClientID:    client.ClientID,
+		UserID:      client.UserID,
+		Expires:     addSecondUnix(60),
+		Scope:       []string{"1", "2"},
+		RedirectURI: "http://localhost/redirect",
+	}
+
+	m.unik.On("Generate").Return("xyz")
+	m.store.On("SetAuthorizeCode", expAc).Return(errors.New("error"))
+
+	ac, resp := rt.createAuthCode(client, []string{"1", "2"}, "http://localhost/redirect")
+	assert.Nil(t, ac)
+	assert.Equal(t, errInternal("error"), resp)
 }
 
-func TestGenerateAuthCode(t *testing.T) {
-	rt, _ := setUpCodeResponseType()
-	code := rt.generateAuthCode()
-	assert.NotEmpty(t, code)
+func TestCodeRespType_CreateRespData(t *testing.T) {
+	rt, _ := setupCodeRespType()
+
+	testCases := []struct {
+		code     string
+		state    string
+		respData respData
+	}{
+		//with out state
+		{code: "123", state: "", respData: respData{"code": "123"}},
+		//with state
+		{code: "123", state: "123", respData: respData{"code": "123", "state": "123"}},
+	}
+
+	for _, testCase := range testCases {
+		data := rt.createRespData(testCase.code, testCase.state)
+		assert.Equal(t, testCase.respData, data)
+	}
 }
