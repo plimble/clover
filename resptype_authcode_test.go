@@ -43,7 +43,7 @@ func TestCodeRespType_GetAuthResponse(t *testing.T) {
 
 	m.unik.On("Generate").Return("xyz")
 	expAc := &AuthorizeCode{
-		Code:        rt.generateAuthCode(),
+		Code:        "xyz",
 		ClientID:    client.ClientID,
 		UserID:      client.UserID,
 		Expires:     addSecondUnix(60),
@@ -71,9 +71,8 @@ func TestCodeRespType_CreateAuthCode(t *testing.T) {
 		UserID:   "abc",
 	}
 
-	m.unik.On("Generate").Return("xyz")
 	expAc := &AuthorizeCode{
-		Code:        rt.generateAuthCode(),
+		Code:        "xyz",
 		ClientID:    client.ClientID,
 		UserID:      client.UserID,
 		Expires:     addSecondUnix(60),
@@ -100,7 +99,7 @@ func TestCodeRespType_CreateAuthCode_WithError(t *testing.T) {
 
 	m.unik.On("Generate").Return("xyz")
 	expAc := &AuthorizeCode{
-		Code:        rt.generateAuthCode(),
+		Code:        "xyz",
 		ClientID:    client.ClientID,
 		UserID:      client.UserID,
 		Expires:     addSecondUnix(60),
