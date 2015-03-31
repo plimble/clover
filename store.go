@@ -1,6 +1,7 @@
 package clover
 
 //go:generate mockery -name allstore -inpkg
+//go:generate msgp
 
 type allstore interface {
 	AuthServerStore
@@ -78,33 +79,33 @@ func (c *DefaultClient) GetRedirectURI() string {
 }
 
 type RefreshToken struct {
-	RefreshToken string   `json:"refresh_token" bson:"_id"`
-	ClientID     string   `json:"client_id" bson:"c"`
-	UserID       string   `json:"user_id" bson:"u"`
-	Expires      int64    `json:"expires" bson:"e"`
-	Scope        []string `json:"scope" bson:"s"`
+	RefreshToken string   `json:"refresh_token" bson:"_id" msg:"r"`
+	ClientID     string   `json:"client_id" bson:"c" msg:"a"`
+	UserID       string   `json:"user_id" bson:"u" msg:"u"`
+	Expires      int64    `json:"expires" bson:"e" msg:"e"`
+	Scope        []string `json:"scope" bson:"s" msg:"s"`
 }
 
 type AuthorizeCode struct {
-	Code        string   `json:"code" bson:"_id"`
-	ClientID    string   `json:"client_id" bson:"c"`
-	UserID      string   `json:"user_id" bson:"u"`
-	Expires     int64    `json:"expires" bson:"e"`
-	Scope       []string `json:"scope" bson:"s"`
-	RedirectURI string   `json:"redirect_uri" bson:"r"`
+	Code        string   `json:"code" bson:"_id" msg:"co"`
+	ClientID    string   `json:"client_id" bson:"c" msg:"c"`
+	UserID      string   `json:"user_id" bson:"u" msg:"u"`
+	Expires     int64    `json:"expires" bson:"e" msg:"e"`
+	Scope       []string `json:"scope" bson:"s" msg:"s"`
+	RedirectURI string   `json:"redirect_uri" bson:"r" msg:"r"`
 }
 
 type AccessToken struct {
-	AccessToken string   `json:"access_token" bson:"_id"`
-	ClientID    string   `json:"client_id" bson:"c"`
-	UserID      string   `json:"user_id" bson:"u"`
-	Expires     int64    `json:"expires" bson:"e"`
-	Scope       []string `json:"scope" bson:"s"`
+	AccessToken string   `json:"access_token" bson:"_id" msg:"a"`
+	ClientID    string   `json:"client_id" bson:"c" msg:"c"`
+	UserID      string   `json:"user_id" bson:"u" msg:"u"`
+	Expires     int64    `json:"expires" bson:"e" msg:"e"`
+	Scope       []string `json:"scope" bson:"s" msg:"s"`
 }
 
 type PublicKey struct {
-	ClientID   string `json:"client_id" bson:"_id"`
-	PublicKey  string `json:"public_key" bson:"pu"`
-	PrivateKey string `json:"private_key" bson:"pr"`
-	Algorithm  string `json:"algorithm" bson:"a"`
+	ClientID   string `json:"client_id" bson:"_id" msg:"c"`
+	PublicKey  string `json:"public_key" bson:"pu" msg:"pu"`
+	PrivateKey string `json:"private_key" bson:"pr" msg:"pr"`
+	Algorithm  string `json:"algorithm" bson:"a" msg:"a"`
 }
