@@ -11,6 +11,14 @@ type allstore interface {
 	PublicKeyStore
 }
 
+type Store interface {
+	AuthServerStore
+	UserStore
+	RefreshTokenStore
+	AuthCodeStore
+	PublicKeyStore
+}
+
 type AuthServerStore interface {
 	GetClient(id string) (Client, error)
 	SetAccessToken(accessToken *AccessToken) error
