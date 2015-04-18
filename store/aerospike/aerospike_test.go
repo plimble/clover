@@ -1,17 +1,15 @@
 package aerospike
 
 import (
-	as "github.com/aerospike/aerospike-client-go"
+	"github.com/plimble/aerosingle"
 	"github.com/plimble/clover"
-	"github.com/plimble/utils/assingle"
 	"github.com/stretchr/testify/suite"
-	"os"
 	"testing"
 )
 
 type StoreSuite struct {
 	suite.Suite
-	client *as.Client
+	client *aerosingle.Client
 	store  *Store
 }
 
@@ -20,11 +18,7 @@ func TestStoreSuite(t *testing.T) {
 }
 
 func (t *StoreSuite) SetupSuite() {
-	var err error
-	t.client, err = as.NewClient(os.Getenv("AEROSPIKE_HOST"), 3000)
-	if err != nil {
-		panic(err)
-	}
+	t.client = aerosingle.New("192.168.99.100", 3000, "test", 512)
 }
 
 func (t *StoreSuite) SetupTest() {
@@ -32,8 +26,8 @@ func (t *StoreSuite) SetupTest() {
 }
 
 func (t *StoreSuite) TearDownTest() {
-	t.store.single.Delete(nil, "access_token", "1")
-	t.store.single.Delete(nil, "auth_code", "1")
+	t.client.Delete(nil, "access_token", "1")
+	t.client.Delete(nil, "auth_code", "1")
 }
 
 func (t *StoreSuite) TearDownSuite() {
@@ -60,7 +54,7 @@ func (t *StoreSuite) TestAccessToken() {
 
 	//not found
 	a, err = t.store.GetAccessToken("xxx")
-	t.Equal(assingle.ErrNotFound, err)
+	t.Equal(aerosingle.ErrNotFound, err)
 	t.Nil(a)
 }
 
@@ -88,7 +82,7 @@ func (t *StoreSuite) TestRefreshToken() {
 
 	//not found
 	r, err = t.store.GetRefreshToken(expr.RefreshToken)
-	t.Equal(assingle.ErrNotFound, err)
+	t.Equal(aerosingle.ErrNotFound, err)
 	t.Nil(r)
 }
 

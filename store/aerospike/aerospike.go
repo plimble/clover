@@ -2,8 +2,8 @@ package aerospike
 
 import (
 	"github.com/aerospike/aerospike-client-go"
+	"github.com/plimble/aerosingle"
 	. "github.com/plimble/clover"
-	"github.com/plimble/utils/assingle"
 	"github.com/plimble/utils/errors2"
 )
 
@@ -14,14 +14,14 @@ type GetUserFunc func(username, password string) (string, []string, error)
 type GetClientFunc func(clientID string) (Client, error)
 
 type Store struct {
-	single        *assingle.ASSingle
+	client        *aerosingle.Client
 	key           *PublicKey
 	getUserFunc   GetUserFunc
 	getClientFunc GetClientFunc
 }
 
-func New(client *aerospike.Client, ns string) *Store {
-	return &Store{assingle.New(client, ns), nil, nil, nil}
+func New(asClient *aerosingle.Client, ns string) *Store {
+	return &Store{asClient, nil, nil, nil}
 }
 
 func (s *Store) RegisterGetUserFunc(fn GetUserFunc) {
@@ -33,7 +33,7 @@ func (s *Store) RegisterGetClientFunc(fn GetClientFunc) {
 }
 
 func (s *Store) Close() {
-	s.single.Close()
+	s.client.Close()
 }
 
 func (s *Store) GetUser(username, password string) (string, []string, error) {
@@ -58,12 +58,12 @@ func (s *Store) SetAccessToken(accessToken *AccessToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.single.Put(policy, "access_token", accessToken.AccessToken, accessToken)
+	return s.client.Put(policy, "access_token", accessToken.AccessToken, accessToken)
 }
 
 func (s *Store) GetAccessToken(at string) (*AccessToken, error) {
 	var data AccessToken
-	if err := s.single.Get(nil, "access_token", at, &data); err != nil {
+	if err := s.client.Get(nil, "access_token", at, &data); err != nil {
 		return nil, err
 	}
 
@@ -74,12 +74,12 @@ func (s *Store) SetRefreshToken(refreshToken *RefreshToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.single.Put(policy, "refresh_token", refreshToken.RefreshToken, refreshToken)
+	return s.client.Put(policy, "refresh_token", refreshToken.RefreshToken, refreshToken)
 }
 
 func (s *Store) GetRefreshToken(rt string) (*RefreshToken, error) {
 	var data RefreshToken
-	if err := s.single.Get(nil, "refresh_token", rt, &data); err != nil {
+	if err := s.client.Get(nil, "refresh_token", rt, &data); err != nil {
 		return nil, err
 	}
 
@@ -87,19 +87,19 @@ func (s *Store) GetRefreshToken(rt string) (*RefreshToken, error) {
 }
 
 func (s *Store) RemoveRefreshToken(rt string) error {
-	return s.single.Delete(nil, "refresh_token", rt)
+	return s.client.Delete(nil, "refresh_token", rt)
 }
 
 func (s *Store) SetAuthorizeCode(ac *AuthorizeCode) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.single.Put(policy, "auth_code", ac.Code, ac)
+	return s.client.Put(policy, "auth_code", ac.Code, ac)
 }
 
 func (s *Store) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
 	var data AuthorizeCode
-	if err := s.single.Get(nil, "auth_code", code, &data); err != nil {
+	if err := s.client.Get(nil, "auth_code", code, &data); err != nil {
 		return nil, err
 	}
 
