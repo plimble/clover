@@ -13,30 +13,30 @@ var errNotFound = errors2.NewNotFound("not found")
 type GetUserFunc func(username, password string) (string, []string, error)
 type GetClientFunc func(clientID string) (Client, error)
 
-type Store struct {
+type AeroStore struct {
 	client        *aerosingle.Client
 	key           *PublicKey
 	getUserFunc   GetUserFunc
 	getClientFunc GetClientFunc
 }
 
-func New(asClient *aerosingle.Client, ns string) *Store {
-	return &Store{asClient, nil, nil, nil}
+func New(asClient *aerosingle.Client) *AeroStore {
+	return &AeroStore{asClient, nil, nil, nil}
 }
 
-func (s *Store) RegisterGetUserFunc(fn GetUserFunc) {
+func (s *AeroStore) RegisterGetUserFunc(fn GetUserFunc) {
 	s.getUserFunc = fn
 }
 
-func (s *Store) RegisterGetClientFunc(fn GetClientFunc) {
+func (s *AeroStore) RegisterGetClientFunc(fn GetClientFunc) {
 	s.getClientFunc = fn
 }
 
-func (s *Store) Close() {
+func (s *AeroStore) Close() {
 	s.client.Close()
 }
 
-func (s *Store) GetUser(username, password string) (string, []string, error) {
+func (s *AeroStore) GetUser(username, password string) (string, []string, error) {
 	if s.getUserFunc == nil {
 		panic("Not implement GetUserFunc")
 	}
@@ -45,7 +45,7 @@ func (s *Store) GetUser(username, password string) (string, []string, error) {
 	return id, scopes, err
 }
 
-func (s *Store) GetClient(cid string) (Client, error) {
+func (s *AeroStore) GetClient(cid string) (Client, error) {
 	if s.getClientFunc == nil {
 		panic("Not implement GetClientFunc")
 	}
@@ -54,14 +54,14 @@ func (s *Store) GetClient(cid string) (Client, error) {
 	return client, err
 }
 
-func (s *Store) SetAccessToken(accessToken *AccessToken) error {
+func (s *AeroStore) SetAccessToken(accessToken *AccessToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
 	return s.client.Put(policy, "access_token", accessToken.AccessToken, accessToken)
 }
 
-func (s *Store) GetAccessToken(at string) (*AccessToken, error) {
+func (s *AeroStore) GetAccessToken(at string) (*AccessToken, error) {
 	var data AccessToken
 	if err := s.client.Get(nil, "access_token", at, &data); err != nil {
 		return nil, err
@@ -70,14 +70,14 @@ func (s *Store) GetAccessToken(at string) (*AccessToken, error) {
 	return &data, nil
 }
 
-func (s *Store) SetRefreshToken(refreshToken *RefreshToken) error {
+func (s *AeroStore) SetRefreshToken(refreshToken *RefreshToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
 	return s.client.Put(policy, "refresh_token", refreshToken.RefreshToken, refreshToken)
 }
 
-func (s *Store) GetRefreshToken(rt string) (*RefreshToken, error) {
+func (s *AeroStore) GetRefreshToken(rt string) (*RefreshToken, error) {
 	var data RefreshToken
 	if err := s.client.Get(nil, "refresh_token", rt, &data); err != nil {
 		return nil, err
@@ -86,18 +86,18 @@ func (s *Store) GetRefreshToken(rt string) (*RefreshToken, error) {
 	return &data, nil
 }
 
-func (s *Store) RemoveRefreshToken(rt string) error {
+func (s *AeroStore) RemoveRefreshToken(rt string) error {
 	return s.client.Delete(nil, "refresh_token", rt)
 }
 
-func (s *Store) SetAuthorizeCode(ac *AuthorizeCode) error {
+func (s *AeroStore) SetAuthorizeCode(ac *AuthorizeCode) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
 	return s.client.Put(policy, "auth_code", ac.Code, ac)
 }
 
-func (s *Store) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
+func (s *AeroStore) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
 	var data AuthorizeCode
 	if err := s.client.Get(nil, "auth_code", code, &data); err != nil {
 		return nil, err
@@ -106,11 +106,11 @@ func (s *Store) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
 	return &data, nil
 }
 
-func (s *Store) SetPublicKey(key *PublicKey) {
+func (s *AeroStore) SetPublicKey(key *PublicKey) {
 	s.key = key
 }
 
-func (s *Store) GetKey(clientID string) (*PublicKey, error) {
+func (s *AeroStore) GetKey(clientID string) (*PublicKey, error) {
 	if s.key == nil {
 		return nil, errNoPublicKey
 	}
