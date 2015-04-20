@@ -10,7 +10,7 @@ import (
 type StoreSuite struct {
 	suite.Suite
 	client *aerosingle.Client
-	store  *Store
+	store  *AeroStore
 }
 
 func TestStoreSuite(t *testing.T) {
@@ -22,7 +22,7 @@ func (t *StoreSuite) SetupSuite() {
 }
 
 func (t *StoreSuite) SetupTest() {
-	t.store = New(t.client, "test")
+	t.store = New(t.client)
 }
 
 func (t *StoreSuite) TearDownTest() {
