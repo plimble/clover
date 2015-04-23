@@ -18,7 +18,7 @@ func TestStoreSuite(t *testing.T) {
 }
 
 func (t *StoreSuite) SetupSuite() {
-	t.client = aerosingle.New("192.168.99.100", 3000, "test", 512)
+	t.client = aerosingle.New("192.168.99.100", 3000, "test")
 }
 
 func (t *StoreSuite) SetupTest() {

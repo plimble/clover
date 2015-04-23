@@ -58,12 +58,12 @@ func (s *AeroStore) SetAccessToken(accessToken *AccessToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.client.Put(policy, "access_token", accessToken.AccessToken, accessToken)
+	return s.client.PutMsgPack(policy, "access_token", accessToken.AccessToken, accessToken)
 }
 
 func (s *AeroStore) GetAccessToken(at string) (*AccessToken, error) {
 	var data AccessToken
-	if err := s.client.Get(nil, "access_token", at, &data); err != nil {
+	if err := s.client.GetMsgPack(nil, "access_token", at, &data); err != nil {
 		return nil, err
 	}
 
@@ -74,12 +74,12 @@ func (s *AeroStore) SetRefreshToken(refreshToken *RefreshToken) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.client.Put(policy, "refresh_token", refreshToken.RefreshToken, refreshToken)
+	return s.client.PutMsgPack(policy, "refresh_token", refreshToken.RefreshToken, refreshToken)
 }
 
 func (s *AeroStore) GetRefreshToken(rt string) (*RefreshToken, error) {
 	var data RefreshToken
-	if err := s.client.Get(nil, "refresh_token", rt, &data); err != nil {
+	if err := s.client.GetMsgPack(nil, "refresh_token", rt, &data); err != nil {
 		return nil, err
 	}
 
@@ -94,12 +94,12 @@ func (s *AeroStore) SetAuthorizeCode(ac *AuthorizeCode) error {
 	policy := aerospike.NewWritePolicy(0, 0)
 	policy.RecordExistsAction = aerospike.CREATE_ONLY
 
-	return s.client.Put(policy, "auth_code", ac.Code, ac)
+	return s.client.PutMsgPack(policy, "auth_code", ac.Code, ac)
 }
 
 func (s *AeroStore) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
 	var data AuthorizeCode
-	if err := s.client.Get(nil, "auth_code", code, &data); err != nil {
+	if err := s.client.GetMsgPack(nil, "auth_code", code, &data); err != nil {
 		return nil, err
 	}
 
