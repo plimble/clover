@@ -29,9 +29,18 @@ func TestPasswordGrant_Validate(t *testing.T) {
 	expGrantData := &GrantData{
 		UserID: "001",
 		Scope:  []string{"1", "2", "3"},
+		Data:   map[string]interface{}{"a": 1, "b": "1"},
 	}
 
-	m.store.On("GetUser", tr.Username, tr.Password).Return(expGrantData.UserID, expGrantData.Scope, nil)
+	u := &DefaultUser{
+		ID:       "001",
+		Username: "test",
+		Password: "1234",
+		Scope:    []string{"1", "2", "3"},
+		Data:     map[string]interface{}{"a": 1, "b": "1"},
+	}
+
+	m.store.On("GetUser", tr.Username, tr.Password).Return(u, nil)
 
 	grantData, resp := c.Validate(tr)
 	assert.Nil(t, resp)
@@ -46,7 +55,7 @@ func TestPasswordGrant_Validate_WithNotFound(t *testing.T) {
 		Password: "xyz",
 	}
 
-	m.store.On("GetUser", tr.Username, tr.Password).Return("", nil, errors.New("not found"))
+	m.store.On("GetUser", tr.Username, tr.Password).Return(nil, errors.New("not found"))
 
 	grantData, resp := c.Validate(tr)
 	assert.Equal(t, errInvalidUsernamePAssword, resp)

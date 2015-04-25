@@ -39,17 +39,16 @@ func (m *Mockallstore) GetAccessToken(at string) (*AccessToken, error) {
 
 	return r0, r1
 }
-func (m *Mockallstore) GetUser(username string, password string) (string, []string, error) {
+func (m *Mockallstore) GetUser(username string, password string) (User, error) {
 	ret := m.Called(username, password)
 
-	r0 := ret.Get(0).(string)
-	var r1 []string
-	if ret.Get(1) != nil {
-		r1 = ret.Get(1).([]string)
+	var r0 User
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(User)
 	}
-	r2 := ret.Error(2)
+	r1 := ret.Error(1)
 
-	return r0, r1, r2
+	return r0, r1
 }
 func (m *Mockallstore) RemoveRefreshToken(rt string) error {
 	ret := m.Called(rt)

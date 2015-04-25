@@ -44,7 +44,7 @@ func TestJWTRespType_CreateToken_WithRSKEY(t *testing.T) {
 	mock.store.On("GetKey", "1001").Return(key, nil)
 
 	mock.store.On("SetAccessToken", testmock.Anything).Return(nil)
-	at, resp := rt.createToken("1001", "1", []string{"email"})
+	at, resp := rt.createToken("1001", "1", []string{"email"}, nil)
 
 	assert.Nil(t, resp)
 	assert.NotEmpty(t, at.AccessToken)
@@ -63,7 +63,7 @@ func TestJWTRespType_CreateToken_WithHSKEY(t *testing.T) {
 	mock.store.On("GetKey", "1001").Return(key, nil)
 
 	mock.store.On("SetAccessToken", testmock.Anything).Return(nil)
-	at, resp := rt.createToken("1001", "1", []string{"email"})
+	at, resp := rt.createToken("1001", "1", []string{"email"}, nil)
 
 	assert.Nil(t, resp)
 	assert.NotEmpty(t, at.AccessToken)
@@ -82,7 +82,7 @@ func TestJWTRespType_CreateToken_WithRSKEY_ErrorGetKey(t *testing.T) {
 	mock.store.On("GetKey", "1001").Return(key, errors.New("test"))
 
 	mock.store.On("SetAccessToken", testmock.Anything).Return(nil)
-	at, resp := rt.createToken("1001", "1", []string{"email"})
+	at, resp := rt.createToken("1001", "1", []string{"email"}, nil)
 
 	assert.Nil(t, at)
 	assert.Equal(t, 500, resp.code)
@@ -101,7 +101,7 @@ func TestJWTRespType_CreateToken_WithRSKEY_ErrorSetAccessToken(t *testing.T) {
 	mock.store.On("GetKey", "1001").Return(key, nil)
 
 	mock.store.On("SetAccessToken", testmock.Anything).Return(errors.New("test"))
-	at, resp := rt.createToken("1001", "1", []string{"email"})
+	at, resp := rt.createToken("1001", "1", []string{"email"}, nil)
 
 	assert.Nil(t, at)
 	assert.Equal(t, 500, resp.code)

@@ -30,6 +30,7 @@ func (g *authCodeGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 		ClientID: auth.ClientID,
 		UserID:   auth.UserID,
 		Scope:    auth.Scope,
+		Data:     auth.Data,
 	}, nil
 }
 

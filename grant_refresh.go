@@ -27,6 +27,7 @@ func (g *refreshGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 		UserID:       rt.UserID,
 		Scope:        rt.Scope,
 		RefreshToken: rt.RefreshToken,
+		Data:         rt.Data,
 	}, nil
 }
 

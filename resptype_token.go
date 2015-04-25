@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-type createTokenFunc func(clientID, userID string, scopes []string) (*AccessToken, *Response)
+type createTokenFunc func(clientID, userID string, scopes []string, data map[string]interface{}) (*AccessToken, *Response)
 
 type tokenRespType struct {
 	config          *AuthConfig
@@ -25,7 +25,7 @@ func newTokenRespType(config *AuthConfig, unik unik.Generator) *tokenRespType {
 }
 
 func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, scopes []string) *Response {
-	at, resp := rt.createTokenFunc(client.GetClientID(), client.GetUserID(), scopes)
+	at, resp := rt.createTokenFunc(client.GetClientID(), client.GetUserID(), scopes, client.GetData())
 	if resp != nil {
 		return resp
 	}
@@ -36,7 +36,7 @@ func (rt *tokenRespType) GetAuthResponse(ar *authorizeRequest, client Client, sc
 }
 
 func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Response {
-	at, resp := rt.createTokenFunc(td.GrantData.ClientID, td.GrantData.UserID, td.Scope)
+	at, resp := rt.createTokenFunc(td.GrantData.ClientID, td.GrantData.UserID, td.Scope, td.GrantData.Data)
 	if resp != nil {
 		return resp
 	}
@@ -51,13 +51,14 @@ func (rt *tokenRespType) GetAccessToken(td *TokenData, includeRefresh bool) *Res
 	return newRespData(data)
 }
 
-func (rt *tokenRespType) createToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
+func (rt *tokenRespType) createToken(clientID, userID string, scopes []string, data map[string]interface{}) (*AccessToken, *Response) {
 	at := &AccessToken{
 		AccessToken: rt.generateToken(),
 		ClientID:    clientID,
 		UserID:      userID,
 		Expires:     addSecondUnix(rt.config.AccessLifeTime),
 		Scope:       scopes,
+		Data:        data,
 	}
 
 	if err := rt.config.AuthServerStore.SetAccessToken(at); err != nil {
@@ -78,6 +79,7 @@ func (rt *tokenRespType) createRefreshToken(at *AccessToken, includeRefresh bool
 		UserID:       at.UserID,
 		Expires:      addSecondUnix(rt.config.RefreshTokenLifetime),
 		Scope:        at.Scope,
+		Data:         at.Data,
 	}
 
 	if err := rt.config.RefreshTokenStore.SetRefreshToken(r); err != nil {

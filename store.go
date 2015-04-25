@@ -26,7 +26,7 @@ type AuthServerStore interface {
 }
 
 type UserStore interface {
-	GetUser(username, password string) (string, []string, error)
+	GetUser(username, password string) (User, error)
 }
 
 type RefreshTokenStore interface {
@@ -44,6 +44,42 @@ type PublicKeyStore interface {
 	GetKey(clientID string) (*PublicKey, error)
 }
 
+type User interface {
+	GetID() string
+	GetUsername() string
+	GetPassword() string
+	GetData() map[string]interface{}
+	GetScope() []string
+}
+
+type DefaultUser struct {
+	ID       string
+	Username string
+	Password string
+	Scope    []string
+	Data     map[string]interface{}
+}
+
+func (u *DefaultUser) GetID() string {
+	return u.ID
+}
+
+func (u *DefaultUser) GetUsername() string {
+	return u.Username
+}
+
+func (u *DefaultUser) GetPassword() string {
+	return u.Password
+}
+
+func (u *DefaultUser) GetData() map[string]interface{} {
+	return u.Data
+}
+
+func (u *DefaultUser) GetScope() []string {
+	return u.Scope
+}
+
 type Client interface {
 	GetClientID() string
 	GetClientSecret() string
@@ -51,6 +87,7 @@ type Client interface {
 	GetUserID() string
 	GetScope() []string
 	GetRedirectURI() string
+	GetData() map[string]interface{}
 }
 
 type DefaultClient struct {
@@ -60,6 +97,7 @@ type DefaultClient struct {
 	UserID       string
 	Scope        []string
 	RedirectURI  string
+	Data         map[string]interface{}
 }
 
 func (c *DefaultClient) GetClientID() string {
@@ -86,29 +124,36 @@ func (c *DefaultClient) GetRedirectURI() string {
 	return c.RedirectURI
 }
 
+func (c *DefaultClient) GetData() map[string]interface{} {
+	return c.Data
+}
+
 type RefreshToken struct {
-	RefreshToken string   `json:"refresh_token" bson:"_id" msg:"r"`
-	ClientID     string   `json:"client_id" bson:"c" msg:"a"`
-	UserID       string   `json:"user_id" bson:"u" msg:"u"`
-	Expires      int64    `json:"expires" bson:"e" msg:"e"`
-	Scope        []string `json:"scope" bson:"s" msg:"s"`
+	RefreshToken string                 `json:"refresh_token" bson:"_id" msg:"r"`
+	ClientID     string                 `json:"client_id" bson:"c" msg:"a"`
+	UserID       string                 `json:"user_id" bson:"u" msg:"u"`
+	Expires      int64                  `json:"expires" bson:"e" msg:"e"`
+	Scope        []string               `json:"scope" bson:"s" msg:"s"`
+	Data         map[string]interface{} `json:"data" bson:"d" msg:"d"`
 }
 
 type AuthorizeCode struct {
-	Code        string   `json:"code" bson:"_id" msg:"co"`
-	ClientID    string   `json:"client_id" bson:"c" msg:"c"`
-	UserID      string   `json:"user_id" bson:"u" msg:"u"`
-	Expires     int64    `json:"expires" bson:"e" msg:"e"`
-	Scope       []string `json:"scope" bson:"s" msg:"s"`
-	RedirectURI string   `json:"redirect_uri" bson:"r" msg:"r"`
+	Code        string                 `json:"code" bson:"_id" msg:"co"`
+	ClientID    string                 `json:"client_id" bson:"c" msg:"c"`
+	UserID      string                 `json:"user_id" bson:"u" msg:"u"`
+	Expires     int64                  `json:"expires" bson:"e" msg:"e"`
+	Scope       []string               `json:"scope" bson:"s" msg:"s"`
+	RedirectURI string                 `json:"redirect_uri" bson:"r" msg:"r"`
+	Data        map[string]interface{} `json:"data" bson:"d" msg:"d"`
 }
 
 type AccessToken struct {
-	AccessToken string   `json:"access_token" bson:"_id" msg:"a"`
-	ClientID    string   `json:"client_id" bson:"c" msg:"c"`
-	UserID      string   `json:"user_id" bson:"u" msg:"u"`
-	Expires     int64    `json:"expires" bson:"e" msg:"e"`
-	Scope       []string `json:"scope" bson:"s" msg:"s"`
+	AccessToken string                 `json:"access_token" bson:"_id" msg:"a"`
+	ClientID    string                 `json:"client_id" bson:"c" msg:"c"`
+	UserID      string                 `json:"user_id" bson:"u" msg:"u"`
+	Expires     int64                  `json:"expires" bson:"e" msg:"e"`
+	Scope       []string               `json:"scope" bson:"s" msg:"s"`
+	Data        map[string]interface{} `json:"data" bson:"d" msg:"d"`
 }
 
 type PublicKey struct {

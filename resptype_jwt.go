@@ -25,7 +25,7 @@ func newJWTResponseType(config *AuthConfig, unik unik.Generator, tokenRespType *
 	return rt
 }
 
-func (rt *jwtResponseType) createToken(clientID, userID string, scopes []string) (*AccessToken, *Response) {
+func (rt *jwtResponseType) createToken(clientID, userID string, scopes []string, data map[string]interface{}) (*AccessToken, *Response) {
 	expires := addSecondUnix(rt.config.AccessLifeTime)
 
 	key, err := rt.config.PublicKeyStore.GetKey(clientID)
@@ -44,6 +44,7 @@ func (rt *jwtResponseType) createToken(clientID, userID string, scopes []string)
 		UserID:      userID,
 		Expires:     expires,
 		Scope:       scopes,
+		Data:        data,
 	}
 
 	if err := rt.config.AuthServerStore.SetAccessToken(at); err != nil {

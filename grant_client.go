@@ -23,6 +23,7 @@ func (g *clientGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 		UserID:    client.GetUserID(),
 		Scope:     client.GetScope(),
 		GrantType: client.GetGrantType(),
+		Data:      client.GetData(),
 	}, nil
 }
 

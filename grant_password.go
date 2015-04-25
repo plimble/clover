@@ -13,14 +13,16 @@ func (g *passwordGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 		return nil, errUsernamePasswordRequired
 	}
 
-	uid, scopes, err := g.store.GetUser(tr.Username, tr.Password)
+	u, err := g.store.GetUser(tr.Username, tr.Password)
+
 	if err != nil {
 		return nil, errInvalidUsernamePAssword
 	}
 
 	return &GrantData{
-		UserID: uid,
-		Scope:  scopes,
+		UserID: u.GetID(),
+		Scope:  u.GetScope(),
+		Data:   u.GetData(),
 	}, nil
 }
 

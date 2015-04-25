@@ -19,6 +19,7 @@ type GrantData struct {
 	Scope        []string
 	GrantType    []string
 	RefreshToken string
+	Data         map[string]interface{}
 }
 
 func checkGrantType(grants []string, grant string) bool {

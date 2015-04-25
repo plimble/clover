@@ -163,7 +163,15 @@ func TestTokenCtrl_ValidateToken_WithPasswordGrant(t *testing.T) {
 		Scope:     []string{"1", "2"},
 	}
 
-	m.store.On("GetUser", tr.Username, tr.Password).Return(tr.Username, nil, nil)
+	u := &DefaultUser{
+		ID:       "001",
+		Username: "abc",
+		Password: "xyz",
+		Scope:    []string{"1", "2", "3"},
+		Data:     map[string]interface{}{"a": 1, "b": "1"},
+	}
+
+	m.store.On("GetUser", tr.Username, tr.Password).Return(u, nil)
 	m.store.On("GetClient", tr.ClientID).Return(client, nil)
 
 	resp := ctrl.validateToken(tr, td)

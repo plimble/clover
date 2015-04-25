@@ -178,7 +178,7 @@ func TestTokenRespType_CreateToken(t *testing.T) {
 
 	mock.unik.On("Generate").Return(expAt.AccessToken)
 	mock.store.On("SetAccessToken", expAt).Return(nil)
-	at, resp := rt.createToken(expAt.ClientID, expAt.UserID, expAt.Scope)
+	at, resp := rt.createToken(expAt.ClientID, expAt.UserID, expAt.Scope, expAt.Data)
 	assert.Nil(t, resp)
 	assert.Equal(t, expAt, at)
 }
@@ -195,7 +195,7 @@ func TestTokenRespType_CreateToken_WithError(t *testing.T) {
 
 	mock.unik.On("Generate").Return(expAt.AccessToken)
 	mock.store.On("SetAccessToken", expAt).Return(errors.New("test"))
-	at, resp := rt.createToken(expAt.ClientID, expAt.UserID, expAt.Scope)
+	at, resp := rt.createToken(expAt.ClientID, expAt.UserID, expAt.Scope, expAt.Data)
 	assert.True(t, resp.IsError())
 	assert.Equal(t, 500, resp.code)
 	assert.Nil(t, at)
