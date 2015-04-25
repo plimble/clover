@@ -1,9 +1,8 @@
 package aerospike
 
 import (
-	"github.com/aerospike/aerospike-client-go"
+	"github.com/plimble/aero"
 	. "github.com/plimble/clover"
-	"github.com/plimble/utils/ashelper"
 	"github.com/plimble/utils/errors2"
 )
 
@@ -14,15 +13,18 @@ type GetUserFunc func(username, password string) (string, []string, error)
 type GetClientFunc func(clientID string) (Client, error)
 
 type AeroStore struct {
-	client        *aerospike.Client
-	ns            string
-	key           *PublicKey
-	getUserFunc   GetUserFunc
-	getClientFunc GetClientFunc
+	client           *aero.Client
+	ns               string
+	key              *PublicKey
+	getUserFunc      GetUserFunc
+	getClientFunc    GetClientFunc
+	tokenLifeTime    int
+	authCodeLifetime int
+	refresLifeTime   int
 }
 
-func New(asClient *aerospike.Client, ns string) *AeroStore {
-	return &AeroStore{asClient, ns, nil, nil, nil}
+func New(asClient *aero.Client, ns string, tokenLifeTime, authCodeLifetime, refresLifeTime int) *AeroStore {
+	return &AeroStore{asClient, ns, nil, nil, nil, tokenLifeTime, authCodeLifetime, refresLifeTime}
 }
 
 func (s *AeroStore) RegisterGetUserFunc(fn GetUserFunc) {
@@ -56,81 +58,105 @@ func (s *AeroStore) GetClient(cid string) (Client, error) {
 }
 
 func (s *AeroStore) SetAccessToken(accessToken *AccessToken) error {
-	policy := aerospike.NewWritePolicy(0, 0)
-	policy.RecordExistsAction = aerospike.CREATE_ONLY
+	policy := aero.NewWritePolicy(0, int32(s.tokenLifeTime*2))
+	policy.RecordExistsAction = aero.CREATE_ONLY
 
-	key, _ := aerospike.NewKey(s.ns, "access_token", accessToken.AccessToken)
+	b, err := aero.MarshalMsgPack(accessToken)
+	if err != nil {
+		return err
+	}
 
-	binAll := aerospike.NewBin("all", ashelper.MarshalMsgPack(accessToken))
+	binAll := aero.NewBin("all", b)
 
-	return ashelper.ErrPut(s.client.PutBins(policy, key, binAll))
+	return s.client.PutBins(policy, s.ns, "access_token", accessToken.AccessToken, binAll)
 }
 
 func (s *AeroStore) GetAccessToken(at string) (*AccessToken, error) {
-	key, _ := aerospike.NewKey(s.ns, "access_token", at)
-
-	rec, err := s.client.Get(nil, key)
-	if err := ashelper.ErrGet(rec, err); err != nil {
+	rec, err := s.client.Get(nil, s.ns, "access_token", at, "all")
+	if err != nil {
 		return nil, err
 	}
 
 	token := &AccessToken{}
-	ashelper.UnmarshalMsgPack(rec.Bins["all"].([]byte), token)
+	if err := aero.UnmarshalMsgPack(rec.Bins["all"].([]byte), token); err != nil {
+		return nil, err
+	}
 
 	return token, nil
 }
 
 func (s *AeroStore) SetRefreshToken(refreshToken *RefreshToken) error {
-	policy := aerospike.NewWritePolicy(0, 0)
-	policy.RecordExistsAction = aerospike.CREATE_ONLY
+	policy := aero.NewWritePolicy(0, int32(s.refresLifeTime*2))
+	policy.RecordExistsAction = aero.CREATE_ONLY
 
-	key, _ := aerospike.NewKey(s.ns, "refresh_token", refreshToken.RefreshToken)
+	// b, err := aero.MarshalMsgPack(refreshToken)
+	// if err != nil {
+	// 	return err
+	// }
 
-	binAll := aerospike.NewBin("all", ashelper.MarshalMsgPack(refreshToken))
+	// binAll := aero.NewBin("all", b)
+	binToken := aero.NewBin("token", refreshToken.RefreshToken)
+	binClientID := aero.NewBin("client_id", refreshToken.ClientID)
+	binUserID := aero.NewBin("user_id", refreshToken.UserID)
+	binExpires := aero.NewBin("expires", refreshToken.Expires)
+	binScope := aero.NewBin("scope", refreshToken.Scope)
 
-	return ashelper.ErrPut(s.client.PutBins(policy, key, binAll))
+	return s.client.PutBins(policy, s.ns, "refresh_token", refreshToken.RefreshToken, binToken, binClientID, binUserID, binExpires, binScope)
 }
 
 func (s *AeroStore) GetRefreshToken(rt string) (*RefreshToken, error) {
-	key, _ := aerospike.NewKey(s.ns, "refresh_token", rt)
-
-	rec, err := s.client.Get(nil, key)
-	if err := ashelper.ErrGet(rec, err); err != nil {
+	rec, err := s.client.Get(nil, s.ns, "refresh_token", rt, "token", "client_id", "user_id", "expires")
+	if err != nil {
 		return nil, err
 	}
 
 	token := &RefreshToken{}
-	ashelper.UnmarshalMsgPack(rec.Bins["all"].([]byte), token)
+
+	token.RefreshToken = rec.Bins["token"].(string)
+	token.ClientID = rec.Bins["client_id"].(string)
+	token.UserID = rec.Bins["user_id"].(string)
+	token.Expires = int64(rec.Bins["expires"].(int))
+	// data := rec.Bins["scope"].([]interface{})
+	// token.Scope = make([]string, len(data))
+	// for i := 0; i < len(data); i++ {
+	// 	token.Scope[i] = data[i].(string)
+	// }
+
+	// if err := aero.UnmarshalMsgPack(rec.Bins["all"].([]byte), token); err != nil {
+	// 	return nil, err
+	// }
 
 	return token, nil
 }
 
 func (s *AeroStore) RemoveRefreshToken(rt string) error {
-	key, _ := aerospike.NewKey(s.ns, "refresh_token", rt)
-	return ashelper.ErrDel(s.client.Delete(nil, key))
+	return s.client.Delete(nil, s.ns, "refresh_token", rt)
 }
 
 func (s *AeroStore) SetAuthorizeCode(ac *AuthorizeCode) error {
-	policy := aerospike.NewWritePolicy(0, 0)
-	policy.RecordExistsAction = aerospike.CREATE_ONLY
+	policy := aero.NewWritePolicy(0, int32(s.authCodeLifetime*2))
+	policy.RecordExistsAction = aero.CREATE_ONLY
 
-	key, _ := aerospike.NewKey(s.ns, "auth_code", ac.Code)
+	b, err := aero.MarshalMsgPack(ac)
+	if err != nil {
+		return err
+	}
 
-	binAll := aerospike.NewBin("all", ashelper.MarshalMsgPack(ac))
+	binAll := aero.NewBin("all", b)
 
-	return ashelper.ErrPut(s.client.PutBins(policy, key, binAll))
+	return s.client.PutBins(policy, s.ns, "auth_code", ac.Code, binAll)
 }
 
 func (s *AeroStore) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
-	key, _ := aerospike.NewKey(s.ns, "auth_code", code)
-
-	rec, err := s.client.Get(nil, key)
-	if err := ashelper.ErrGet(rec, err); err != nil {
+	rec, err := s.client.Get(nil, s.ns, "auth_code", code, "all")
+	if err != nil {
 		return nil, err
 	}
 
 	authCode := &AuthorizeCode{}
-	ashelper.UnmarshalMsgPack(rec.Bins["all"].([]byte), authCode)
+	if err := aero.UnmarshalMsgPack(rec.Bins["all"].([]byte), authCode); err != nil {
+		return nil, err
+	}
 
 	return authCode, nil
 }

@@ -1,16 +1,15 @@
 package aerospike
 
 import (
-	"github.com/aerospike/aerospike-client-go"
+	"github.com/plimble/aero"
 	"github.com/plimble/clover"
-	"github.com/plimble/utils/ashelper"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
 type StoreSuite struct {
 	suite.Suite
-	client *aerospike.Client
+	client *aero.Client
 	store  *AeroStore
 }
 
@@ -19,24 +18,16 @@ func TestStoreSuite(t *testing.T) {
 }
 
 func (t *StoreSuite) SetupSuite() {
-	var err error
-	t.client, err = aerospike.NewClient("192.168.99.112", 3000)
-	if err != nil {
-		panic(err)
-	}
+	t.client = aero.NewClient("192.168.99.112", 3000)
 }
 
 func (t *StoreSuite) SetupTest() {
-	t.store = New(t.client, "test")
+	t.store = New(t.client, "test", 100, 100, 100)
 }
 
 func (t *StoreSuite) TearDownTest() {
-	accessKey, _ := aerospike.NewKey("test", "access_token", "1")
-	authCodeKey, _ := aerospike.NewKey("test", "auth_code", "1")
-
-	t.client.Delete(nil, accessKey)
-	t.client.Delete(nil, authCodeKey)
-
+	t.client.Delete(nil, t.store.ns, "access_token", "1")
+	t.client.Delete(nil, t.store.ns, "auth_code", "1")
 }
 
 func (t *StoreSuite) TearDownSuite() {
@@ -63,7 +54,7 @@ func (t *StoreSuite) TestAccessToken() {
 
 	//not found
 	a, err = t.store.GetAccessToken("xxx")
-	t.Equal(ashelper.ErrNotFound, err)
+	t.Equal(aero.ErrNotFound, err)
 	t.Nil(a)
 }
 
@@ -91,7 +82,7 @@ func (t *StoreSuite) TestRefreshToken() {
 
 	//not found
 	r, err = t.store.GetRefreshToken(expr.RefreshToken)
-	t.Equal(ashelper.ErrNotFound, err)
+	t.Equal(aero.ErrNotFound, err)
 	t.Nil(r)
 }
 
@@ -133,4 +124,46 @@ func (t *StoreSuite) TestGetKey() {
 	key, err = t.store.GetKey(expk.ClientID)
 	t.NoError(err)
 	t.Equal(expk, key)
+}
+
+func BenchmarkV1(b *testing.B) {
+	client := aero.NewClient("192.168.99.112", 3000)
+	s := New(client, "test", 100, 100, 100)
+	s.SetAccessToken(&clover.AccessToken{
+		AccessToken: "1",
+		ClientID:    "2",
+		UserID:      "3",
+		Expires:     100,
+		Scope:       []string{"1", "2"},
+	})
+	defer func() {
+		client.Delete(nil, "test", "access_token", "1")
+	}()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.GetAccessToken("1")
+	}
+}
+
+func BenchmarkV2(b *testing.B) {
+	client := aero.NewClient("192.168.99.112", 3000)
+	s := New(client, "test", 100, 100, 100)
+	s.SetAccessToken(&clover.AccessToken{
+		AccessToken: "1",
+		ClientID:    "2",
+		UserID:      "3",
+		Expires:     100,
+		Scope:       []string{"1", "2"},
+	})
+	defer func() {
+		client.Delete(nil, "test", "access_token", "1")
+	}()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.GetAccessToken("1")
+	}
 }
