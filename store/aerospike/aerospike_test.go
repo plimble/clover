@@ -18,7 +18,7 @@ func TestStoreSuite(t *testing.T) {
 }
 
 func (t *StoreSuite) SetupSuite() {
-	t.client = aero.NewClient("192.168.99.112", 3000)
+	t.client = aero.NewClient("192.168.99.100", 3000)
 }
 
 func (t *StoreSuite) SetupTest() {
@@ -124,46 +124,4 @@ func (t *StoreSuite) TestGetKey() {
 	key, err = t.store.GetKey(expk.ClientID)
 	t.NoError(err)
 	t.Equal(expk, key)
-}
-
-func BenchmarkV1(b *testing.B) {
-	client := aero.NewClient("192.168.99.112", 3000)
-	s := New(client, "test", 100, 100, 100)
-	s.SetAccessToken(&clover.AccessToken{
-		AccessToken: "1",
-		ClientID:    "2",
-		UserID:      "3",
-		Expires:     100,
-		Scope:       []string{"1", "2"},
-	})
-	defer func() {
-		client.Delete(nil, "test", "access_token", "1")
-	}()
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.GetAccessToken("1")
-	}
-}
-
-func BenchmarkV2(b *testing.B) {
-	client := aero.NewClient("192.168.99.112", 3000)
-	s := New(client, "test", 100, 100, 100)
-	s.SetAccessToken(&clover.AccessToken{
-		AccessToken: "1",
-		ClientID:    "2",
-		UserID:      "3",
-		Expires:     100,
-		Scope:       []string{"1", "2"},
-	})
-	defer func() {
-		client.Delete(nil, "test", "access_token", "1")
-	}()
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.GetAccessToken("1")
-	}
 }

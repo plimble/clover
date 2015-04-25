@@ -89,42 +89,27 @@ func (s *AeroStore) SetRefreshToken(refreshToken *RefreshToken) error {
 	policy := aero.NewWritePolicy(0, int32(s.refresLifeTime*2))
 	policy.RecordExistsAction = aero.CREATE_ONLY
 
-	// b, err := aero.MarshalMsgPack(refreshToken)
-	// if err != nil {
-	// 	return err
-	// }
+	b, err := aero.MarshalMsgPack(refreshToken)
+	if err != nil {
+		return err
+	}
 
-	// binAll := aero.NewBin("all", b)
-	binToken := aero.NewBin("token", refreshToken.RefreshToken)
-	binClientID := aero.NewBin("client_id", refreshToken.ClientID)
-	binUserID := aero.NewBin("user_id", refreshToken.UserID)
-	binExpires := aero.NewBin("expires", refreshToken.Expires)
-	binScope := aero.NewBin("scope", refreshToken.Scope)
+	binAll := aero.NewBin("all", b)
 
-	return s.client.PutBins(policy, s.ns, "refresh_token", refreshToken.RefreshToken, binToken, binClientID, binUserID, binExpires, binScope)
+	return s.client.PutBins(policy, s.ns, "refresh_token", refreshToken.RefreshToken, binAll)
 }
 
 func (s *AeroStore) GetRefreshToken(rt string) (*RefreshToken, error) {
-	rec, err := s.client.Get(nil, s.ns, "refresh_token", rt, "token", "client_id", "user_id", "expires")
+	rec, err := s.client.Get(nil, s.ns, "refresh_token", rt, "all")
 	if err != nil {
 		return nil, err
 	}
 
 	token := &RefreshToken{}
 
-	token.RefreshToken = rec.Bins["token"].(string)
-	token.ClientID = rec.Bins["client_id"].(string)
-	token.UserID = rec.Bins["user_id"].(string)
-	token.Expires = int64(rec.Bins["expires"].(int))
-	// data := rec.Bins["scope"].([]interface{})
-	// token.Scope = make([]string, len(data))
-	// for i := 0; i < len(data); i++ {
-	// 	token.Scope[i] = data[i].(string)
-	// }
-
-	// if err := aero.UnmarshalMsgPack(rec.Bins["all"].([]byte), token); err != nil {
-	// 	return nil, err
-	// }
+	if err := aero.UnmarshalMsgPack(rec.Bins["all"].([]byte), token); err != nil {
+		return nil, err
+	}
 
 	return token, nil
 }
