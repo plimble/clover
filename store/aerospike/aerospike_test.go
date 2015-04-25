@@ -3,6 +3,7 @@ package aerospike
 import (
 	"github.com/plimble/aero"
 	"github.com/plimble/clover"
+	"github.com/plimble/utils/env"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -18,7 +19,7 @@ func TestStoreSuite(t *testing.T) {
 }
 
 func (t *StoreSuite) SetupSuite() {
-	t.client = aero.NewClient("192.168.99.100", 3000)
+	t.client = aero.NewClient(env.String("AS_HOST", ""), 3000)
 }
 
 func (t *StoreSuite) SetupTest() {
