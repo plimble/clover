@@ -24,15 +24,22 @@ func (m *MockGrantType) Validate(tr *TokenRequest) (*GrantData, *Response) {
 
 	return r0, r1
 }
-func (m *MockGrantType) GetGrantType() string {
+func (m *MockGrantType) Name() string {
 	ret := m.Called()
 
 	r0 := ret.Get(0).(string)
 
 	return r0
 }
-func (m *MockGrantType) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
-	ret := m.Called(td, respType)
+func (m *MockGrantType) IncludeRefreshToken() bool {
+	ret := m.Called()
+
+	r0 := ret.Get(0).(bool)
+
+	return r0
+}
+func (m *MockGrantType) BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response {
+	ret := m.Called(tr, td)
 
 	var r0 *Response
 	if ret.Get(0) != nil {

@@ -4,7 +4,7 @@ type authCodeGrant struct {
 	store AuthCodeStore
 }
 
-func newAuthCodeGrant(store AuthCodeStore) GrantType {
+func NewAuthorizationCode(store AuthCodeStore) GrantType {
 	return &authCodeGrant{store}
 }
 
@@ -34,10 +34,14 @@ func (g *authCodeGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	}, nil
 }
 
-func (g *authCodeGrant) GetGrantType() string {
+func (g *authCodeGrant) Name() string {
 	return AUTHORIZATION_CODE
 }
 
-func (g *authCodeGrant) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
-	return respType.GetAccessToken(td, true)
+func (g *authCodeGrant) IncludeRefreshToken() bool {
+	return true
+}
+
+func (g *authCodeGrant) BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response {
+	return nil
 }

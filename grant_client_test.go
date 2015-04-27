@@ -1,26 +1,28 @@
 package clover
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/plimble/utils/errors2"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-type mockClientGrant struct {
+type GrantClientSuite struct {
+	suite.Suite
 	store *Mockallstore
+	grant GrantType
 }
 
-func setUpClientGrant() (GrantType, *mockClientGrant) {
-	store := NewMockallstore()
-	grant := newClientGrant(store)
-	mock := &mockClientGrant{store}
-	return grant, mock
+func TestGrantClientSuite(t *testing.T) {
+	suite.Run(t, &GrantClientSuite{})
 }
 
-func TestClientGrant_Validate(t *testing.T) {
-	c, m := setUpClientGrant()
+func (t *GrantClientSuite) SetupTest() {
+	t.store = NewMockallstore()
+	t.grant = NewClientCredential(t.store)
+}
 
-	client := &DefaultClient{
+func (t *GrantClientSuite) TestValidate() {
+	client := &TestClient{
 		ClientID:     "123",
 		UserID:       "abc",
 		ClientSecret: "321",
@@ -34,38 +36,35 @@ func TestClientGrant_Validate(t *testing.T) {
 	}
 
 	expGrantData := &GrantData{
-		ClientID:  client.ClientID,
-		UserID:    client.UserID,
-		Scope:     client.Scope,
-		GrantType: client.GrantType,
+		ClientID: client.ClientID,
+		UserID:   client.UserID,
+		Scope:    client.Scope,
 	}
 
-	m.store.On("GetClient", tr.ClientID).Return(client, nil)
+	t.store.On("GetClient", tr.ClientID).Return(client, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Nil(t, resp)
-	assert.EqualValues(t, grantData, expGrantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.store.AssertExpectations(t.T())
+	t.Nil(resp)
+	t.EqualValues(grantData, expGrantData)
 }
 
-func TestClientGrant_Validate_WithNotFoundClient(t *testing.T) {
-	c, m := setUpClientGrant()
-
+func (t *GrantClientSuite) TestValidate_WithNotFoundClient() {
 	tr := &TokenRequest{
 		ClientID:     "123",
 		ClientSecret: "321",
 	}
 
-	m.store.On("GetClient", tr.ClientID).Return(nil, errors.New("not found"))
+	t.store.On("GetClient", tr.ClientID).Return(nil, errors2.NewAnyError())
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errInvalidClientCredentail, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.store.AssertExpectations(t.T())
+	t.Equal(errInvalidClientCredentail, resp)
+	t.Nil(grantData)
 }
 
-func TestClientGrant_Validate_WithIvalidClientSecret(t *testing.T) {
-	c, m := setUpClientGrant()
-
-	client := &DefaultClient{
+func (t *GrantClientSuite) TestValidate_WithIvalidClientSecret() {
+	client := &TestClient{
 		ClientID:     "123",
 		UserID:       "abc",
 		ClientSecret: "321",
@@ -78,27 +77,24 @@ func TestClientGrant_Validate_WithIvalidClientSecret(t *testing.T) {
 		ClientSecret: "xxxx",
 	}
 
-	m.store.On("GetClient", tr.ClientID).Return(client, nil)
+	t.store.On("GetClient", tr.ClientID).Return(client, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errInvalidClientCredentail, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.store.AssertExpectations(t.T())
+	t.Equal(errInvalidClientCredentail, resp)
+	t.Nil(grantData)
 }
 
-func TestClientGrant_GetGrantType(t *testing.T) {
-	c, _ := setUpClientGrant()
-	grant := c.GetGrantType()
-	assert.Equal(t, CLIENT_CREDENTIALS, grant)
+func (t *GrantClientSuite) TestName() {
+	t.Equal(CLIENT_CREDENTIALS, t.grant.Name())
 }
 
-func TestClientGrant_CreateAccessToken(t *testing.T) {
-	c, _ := setUpClientGrant()
+func (t *GrantClientSuite) TestIncludeRefreshToken() {
+	t.False(t.grant.IncludeRefreshToken())
+}
 
+func (t *GrantClientSuite) TestBeforeCreateAccessToken() {
+	tr := &TokenRequest{}
 	td := &TokenData{}
-	respType := NewMockResponseType()
-	respType.On("GetAccessToken", td, false).Return(nil)
-
-	c.CreateAccessToken(td, respType)
-
-	respType.AssertExpectations(t)
+	t.Nil(t.grant.BeforeCreateAccessToken(tr, td))
 }

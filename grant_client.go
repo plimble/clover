@@ -1,10 +1,10 @@
 package clover
 
 type clientGrant struct {
-	store AuthServerStore
+	store ClientStore
 }
 
-func newClientGrant(store AuthServerStore) GrantType {
+func NewClientCredential(store ClientStore) GrantType {
 	return &clientGrant{store}
 }
 
@@ -19,18 +19,21 @@ func (g *clientGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	}
 
 	return &GrantData{
-		ClientID:  client.GetClientID(),
-		UserID:    client.GetUserID(),
-		Scope:     client.GetScope(),
-		GrantType: client.GetGrantType(),
-		Data:      client.GetData(),
+		ClientID: client.GetClientID(),
+		UserID:   client.GetUserID(),
+		Scope:    client.GetScope(),
+		Data:     client.GetData(),
 	}, nil
 }
 
-func (g *clientGrant) GetGrantType() string {
+func (g *clientGrant) Name() string {
 	return CLIENT_CREDENTIALS
 }
 
-func (g *clientGrant) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
-	return respType.GetAccessToken(td, false)
+func (g *clientGrant) IncludeRefreshToken() bool {
+	return false
+}
+
+func (g *clientGrant) BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response {
+	return nil
 }

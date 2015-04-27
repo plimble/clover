@@ -2,47 +2,92 @@ package clover
 
 import (
 	"encoding/base64"
-	"github.com/plimble/unik"
 	"net/http"
 	"strings"
 )
 
-type AuthServer struct {
-	config    *AuthConfig
-	authCtrl  *authController
-	tokenCtrl *tokenController
+type AuthServerConfig struct {
+	AccessLifeTime       int
+	AuthCodeLifeTime     int
+	AllowImplicit        bool
+	StateParamRequired   bool
+	DefaultScopes        []string
+	AllowCredentialsBody bool
 }
 
-func NewAuthServer(config *AuthConfig) *AuthServer {
+type authorizeRequest struct {
+	state        string
+	redirectURI  string
+	responseType string
+	clientID     string
+	scope        string
+}
+
+type TokenRequest struct {
+	Username     string
+	Password     string
+	Code         string
+	RedirectURI  string
+	RefreshToken string
+	ClientID     string
+	ClientSecret string
+	GrantType    string
+	Scope        string
+	Assertion    string
+}
+
+type AuthServer struct {
+	config        *AuthServerConfig
+	store         ClientStore
+	authRespTypes map[string]AuthorizeRespType
+	tokenRespType AccessTokenRespType
+	grants        map[string]GrantType
+	authorizeCtrl *authorizeCtrl
+	tokenCtrl     *tokenCtrl
+}
+
+func NewAuthServer(store ClientStore, config *AuthServerConfig) *AuthServer {
 	a := &AuthServer{
-		config: config,
+		config:        config,
+		store:         store,
+		authRespTypes: make(map[string]AuthorizeRespType),
+		// tokenRespType: ,
+		grants: make(map[string]GrantType),
 	}
 
-	tokenResp := a.getTokenRespType()
-	authResp := newCodeRespType(a.config, unik.NewUUIDV1())
-
-	a.tokenCtrl = newTokenController(a.config, tokenResp)
-	a.authCtrl = newAuthController(a.config, authResp, tokenResp)
+	a.authorizeCtrl = newAuthorizeCtrl(a.store, a.config)
+	a.tokenCtrl = newTokenCtrl(a.store, a.config)
 
 	return a
 }
 
-func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool) *Response {
-	ar := a.parseAuthRequest(r)
-	resp := a.authCtrl.handleAuthorize(ar, isAuthorized)
-
-	return resp
+func (a *AuthServer) AddGrantType(grantType GrantType) {
+	a.grants[grantType.Name()] = grantType
 }
 
-func (a *AuthServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request) (Client, []string, *Response) {
-	ar := a.parseAuthRequest(r)
+func (a *AuthServer) AddRespType(authorizeRespType AuthorizeRespType) {
+	a.authRespTypes[authorizeRespType.Name()] = authorizeRespType
+}
 
-	resp := a.authCtrl.validateAuthRequest(ar)
+func (a *AuthServer) SetAccessTokenRespType(accessTokenRespType AccessTokenRespType) {
+	a.tokenRespType = accessTokenRespType
+}
+
+func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool) *Response {
+	ar := parseAuthRequest(r)
+
+	return a.authorizeCtrl.authorize(ar, a.authRespTypes, isAuthorized)
+}
+
+func (a *AuthServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request) (*AuthorizeData, *Response) {
+	ar := parseAuthRequest(r)
+
+	ad, resp := a.authorizeCtrl.validate(ar, a.authRespTypes)
 	if resp != nil {
-		return nil, nil, resp
+		return nil, resp
 	}
 
-	return ar.client, ar.scopeArr, newResp()
+	return ad, nil
 }
 
 func (a *AuthServer) Token(w http.ResponseWriter, r *http.Request) *Response {
@@ -50,16 +95,16 @@ func (a *AuthServer) Token(w http.ResponseWriter, r *http.Request) *Response {
 		return errMustBePostMetthod
 	}
 
-	tr, resp := a.parseTokenRequest(r)
+	tr, resp := parseTokenRequest(r, a.config)
 	if resp != nil {
 		return resp
 	}
 
-	return a.tokenCtrl.handleAccessToken(tr)
+	return a.tokenCtrl.token(tr, a.tokenRespType, a.grants)
 }
 
-func (a *AuthServer) parseTokenRequest(r *http.Request) (*TokenRequest, *Response) {
-	clientID, clientSecret, resp := a.getCredentialsFromHttp(r, a.config)
+func parseTokenRequest(r *http.Request, config *AuthServerConfig) (*TokenRequest, *Response) {
+	clientID, clientSecret, resp := getCredentialsFromHttp(r, config)
 	if resp != nil {
 		return nil, resp
 	}
@@ -67,32 +112,30 @@ func (a *AuthServer) parseTokenRequest(r *http.Request) (*TokenRequest, *Respons
 	tr := &TokenRequest{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		Scope:        r.FormValue("scope"),
-		GrantType:    r.FormValue("grant_type"),
-		Username:     r.FormValue("username"),
-		Password:     r.FormValue("password"),
-		Code:         r.FormValue("code"),
-		RedirectURI:  r.FormValue("redirect_uri"),
-		RefreshToken: r.FormValue("refresh_token"),
-		Assertion:    r.FormValue("assertion"),
+		Scope:        reqVal(r, "scope", false),
+		GrantType:    reqVal(r, "grant_type", false),
+		Username:     reqVal(r, "username", false),
+		Password:     reqVal(r, "password", false),
+		Code:         reqVal(r, "code", false),
+		RedirectURI:  reqVal(r, "redirect_uri", false),
+		RefreshToken: reqVal(r, "refresh_token", false),
+		Assertion:    reqVal(r, "assertion", false),
 	}
 
 	return tr, nil
 }
 
-func (a *AuthServer) parseAuthRequest(r *http.Request) *authorizeRequest {
-	ar := &authorizeRequest{
-		state:        r.FormValue("state"),
-		redirectURI:  r.FormValue("redirect_uri"),
-		responseType: strings.ToLower(r.FormValue("response_type")),
-		clientID:     r.FormValue("client_id"),
-		scope:        r.FormValue("scope"),
+func parseAuthRequest(r *http.Request) *authorizeRequest {
+	return &authorizeRequest{
+		state:        reqVal(r, "state", true),
+		redirectURI:  reqVal(r, "redirect_uri", true),
+		responseType: reqVal(r, "response_type", true),
+		clientID:     reqVal(r, "client_id", true),
+		scope:        reqVal(r, "scope", true),
 	}
-
-	return ar
 }
 
-func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig) (string, string, *Response) {
+func getCredentialsFromHttp(r *http.Request, config *AuthServerConfig) (string, string, *Response) {
 	headerAuth := r.Header.Get("Authorization")
 
 	switch {
@@ -127,12 +170,11 @@ func (a *AuthServer) getCredentialsFromHttp(r *http.Request, config *AuthConfig)
 	return "", "", errCredentailsRequired
 }
 
-func (a *AuthServer) getTokenRespType() ResponseType {
-	tokenRespType := newTokenRespType(a.config, unik.NewUUID1Base64())
-
-	if a.config.PublicKeyStore != nil {
-		return newJWTResponseType(a.config, unik.NewUUID1Base64(), tokenRespType)
+func reqVal(r *http.Request, key string, allowQuery bool) string {
+	val := r.PostFormValue(key)
+	if allowQuery && val == "" {
+		val = r.FormValue(key)
 	}
 
-	return tokenRespType
+	return val
 }

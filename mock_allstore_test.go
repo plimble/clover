@@ -21,6 +21,17 @@ func (m *Mockallstore) GetClient(id string) (Client, error) {
 
 	return r0, r1
 }
+func (m *Mockallstore) GetUser(username string, password string) (User, error) {
+	ret := m.Called(username, password)
+
+	var r0 User
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(User)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
 func (m *Mockallstore) SetAccessToken(accessToken *AccessToken) error {
 	ret := m.Called(accessToken)
 
@@ -34,17 +45,6 @@ func (m *Mockallstore) GetAccessToken(at string) (*AccessToken, error) {
 	var r0 *AccessToken
 	if ret.Get(0) != nil {
 		r0 = ret.Get(0).(*AccessToken)
-	}
-	r1 := ret.Error(1)
-
-	return r0, r1
-}
-func (m *Mockallstore) GetUser(username string, password string) (User, error) {
-	ret := m.Called(username, password)
-
-	var r0 User
-	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(User)
 	}
 	r1 := ret.Error(1)
 

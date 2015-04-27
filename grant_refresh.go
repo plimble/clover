@@ -4,7 +4,7 @@ type refreshGrant struct {
 	store RefreshTokenStore
 }
 
-func newRefreshGrant(store RefreshTokenStore) GrantType {
+func NewRefreshToken(store RefreshTokenStore) GrantType {
 	return &refreshGrant{store}
 }
 
@@ -23,22 +23,25 @@ func (g *refreshGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	}
 
 	return &GrantData{
-		ClientID:     rt.ClientID,
-		UserID:       rt.UserID,
-		Scope:        rt.Scope,
-		RefreshToken: rt.RefreshToken,
-		Data:         rt.Data,
+		ClientID: rt.ClientID,
+		UserID:   rt.UserID,
+		Scope:    rt.Scope,
+		Data:     rt.Data,
 	}, nil
 }
 
-func (g *refreshGrant) GetGrantType() string {
+func (g *refreshGrant) Name() string {
 	return REFRESH_TOKEN
 }
 
-func (g *refreshGrant) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
-	if err := g.store.RemoveRefreshToken(td.GrantData.RefreshToken); err != nil {
+func (g *refreshGrant) IncludeRefreshToken() bool {
+	return true
+}
+
+func (g *refreshGrant) BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response {
+	if err := g.store.RemoveRefreshToken(tr.RefreshToken); err != nil {
 		return errInternal(err.Error())
 	}
 
-	return respType.GetAccessToken(td, true)
+	return nil
 }

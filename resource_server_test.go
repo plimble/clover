@@ -1,136 +1,114 @@
 package clover
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/plimble/utils/errors2"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-type mockResourceServer struct {
-	store *Mockallstore
+type ResourceServerSuite struct {
+	suite.Suite
+	store    *Mockallstore
+	resource *ResourceServer
 }
 
-func getTokenRequest() *http.Request {
+func TestResourceServer(t *testing.T) {
+	suite.Run(t, &ResourceServerSuite{})
+}
+
+func (t *ResourceServerSuite) SetupTest() {
+	t.store = NewMockallstore()
+	config := &ResourceConfig{}
+	t.resource = NewResourceServer(t.store, config)
+}
+
+func (t *ResourceServerSuite) TestGetTokenFromHttp_FromQuery() {
 	r, _ := http.NewRequest("GET", "/", nil)
 	q := r.URL.Query()
 	q.Add("access_token", "123")
 	r.URL.RawQuery = q.Encode()
 
-	return r
+	token, resp := t.resource.getTokenFromHttp(r)
+
+	t.Equal("123", token)
+	t.Nil(resp)
 }
 
-func setupResourceServer() (*ResourceServer, *mockAuthCtrl) {
-	store := NewMockallstore()
-	config := NewResourceConfig(store)
-	mock := &mockAuthCtrl{store}
-	ctrl := NewResourceServer(config)
-
-	return ctrl, mock
-}
-
-func TestResourceServer_GetTokenFromHttp_FromQuery(t *testing.T) {
-	re, _ := setupResourceServer()
-
-	r, _ := http.NewRequest("GET", "/", nil)
-	q := r.URL.Query()
-	q.Add("access_token", "123")
-	r.URL.RawQuery = q.Encode()
-
-	token, resp := re.getTokenFromHttp(r)
-
-	assert.Equal(t, "123", token)
-	assert.Nil(t, resp)
-}
-
-func TestResourceServer_GetTokenFromHttp_FromPost(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestGetTokenFromHttp_FromPost() {
 	r, _ := http.NewRequest("POST", "/", nil)
 	r.ParseForm()
 	r.PostForm.Add("access_token", "123")
 
-	token, resp := re.getTokenFromHttp(r)
+	token, resp := t.resource.getTokenFromHttp(r)
 
-	assert.Equal(t, "123", token)
-	assert.Nil(t, resp)
+	t.Equal("123", token)
+	t.Nil(resp)
 }
 
-func TestResourceServer_GetTokenFromHttp_FromAuthorization(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestGetTokenFromHttp_FromAuthorization() {
 	r, _ := http.NewRequest("POST", "/", nil)
 	r.Header.Add("Authorization", "Bearer 123")
 
-	token, resp := re.getTokenFromHttp(r)
+	token, resp := t.resource.getTokenFromHttp(r)
 
-	assert.Equal(t, "123", token)
-	assert.Nil(t, resp)
+	t.Equal("123", token)
+	t.Nil(resp)
 }
 
-func TestResourceServer_GetTokenFromHttp_MultipleMethod(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestGetTokenFromHttp_MultipleMethod() {
 	r, _ := http.NewRequest("POST", "/", nil)
 	r.Header.Add("Authorization", "Bearer 123")
 	r.ParseForm()
 	r.PostForm.Add("access_token", "123")
 
-	token, resp := re.getTokenFromHttp(r)
+	token, resp := t.resource.getTokenFromHttp(r)
 
-	assert.Equal(t, "", token)
-	assert.Equal(t, errOnlyOneTokenMethod, resp)
+	t.Equal("", token)
+	t.Equal(errOnlyOneTokenMethod, resp)
 }
 
-func TestResourceServer_GetTokenFromHttp_InvalidMalFormed(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestGetTokenFromHttp_InvalidMalFormed() {
 	r, _ := http.NewRequest("POST", "/", nil)
 	r.Header.Add("Authorization", "XXX 123")
 
-	token, resp := re.getTokenFromHttp(r)
+	token, resp := t.resource.getTokenFromHttp(r)
 
-	assert.Equal(t, "", token)
-	assert.Equal(t, errMalFormedHeader, resp)
+	t.Equal("", token)
+	t.Equal(errMalFormedHeader, resp)
 }
 
-func TestResourceServer_GetTokenFromHttp_NoAccessToken(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestGetTokenFromHttp_NoAccessToken() {
 	r, _ := http.NewRequest("POST", "/", nil)
 
-	token, resp := re.getTokenFromHttp(r)
+	token, resp := t.resource.getTokenFromHttp(r)
 
-	assert.Equal(t, "", token)
-	assert.Equal(t, errNoTokenInRequest, resp)
+	t.Equal("", token)
+	t.Equal(errNoTokenInRequest, resp)
 }
 
-func TestResourceServer_SetHeader(t *testing.T) {
-	re, _ := setupResourceServer()
-
+func (t *ResourceServerSuite) TestSetHeader() {
 	testCases := []struct {
 		resp   *Response
 		scopes []string
 		expWWW string
 	}{
-		{newResp(), nil, `Bearer realm="Service"`},
-		{newResp(), []string{"1", "2"}, `Bearer realm="Service", scopes="1 2"`},
+		{&Response{code: 200}, nil, `Bearer realm="Service"`},
+		{&Response{code: 200}, []string{"1", "2"}, `Bearer realm="Service", scopes="1 2"`},
 		{errParseURI, nil, `Bearer realm="Service", error="invalid_uri", error_description="Invalid parse uri"`},
 		{errParseURI, []string{"1", "2"}, `Bearer realm="Service", scopes="1 2", error="invalid_uri", error_description="Invalid parse uri"`},
 	}
 
 	for _, testCase := range testCases {
 		w := httptest.NewRecorder()
-		re.setHeader(testCase.resp, testCase.scopes, w)
+		t.resource.setHeader(testCase.resp, testCase.scopes, w)
 
-		assert.Equal(t, w.Header().Get("WWW-Authenticate"), testCase.expWWW)
+		t.Equal(w.Header().Get("WWW-Authenticate"), testCase.expWWW)
 	}
 }
 
-func TestResourceServer_VerifyAccessToken_NoScope(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_NoScope() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
@@ -139,31 +117,27 @@ func TestResourceServer_VerifyAccessToken_NoScope(t *testing.T) {
 		Expires:     addSecondUnix(60),
 	}
 
-	m.store.On("GetAccessToken", "123").Return(expat, nil)
+	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := re.VerifyAccessToken(w, r)
+	at, resp := t.resource.VerifyAccessToken(w, r)
 
-	assert.False(t, resp.IsError())
-	assert.Equal(t, expat, at)
+	t.False(resp.IsError())
+	t.Equal(expat, at)
 }
 
-func TestResourceServer_VerifyAccessToken_TokenNotFound(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_TokenNotFound() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
-	m.store.On("GetAccessToken", "123").Return(nil, errors.New("not found"))
+	t.store.On("GetAccessToken", "123").Return(nil, errors2.NewAnyError())
 
-	at, resp := re.VerifyAccessToken(w, r)
+	at, resp := t.resource.VerifyAccessToken(w, r)
 
-	assert.Equal(t, errInvalidAccessToken, resp)
-	assert.Nil(t, at)
+	t.Equal(errInvalidAccessToken, resp)
+	t.Nil(at)
 }
 
-func TestResourceServer_VerifyAccessToken_TokenExpire(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_TokenExpire() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
@@ -172,17 +146,15 @@ func TestResourceServer_VerifyAccessToken_TokenExpire(t *testing.T) {
 		Expires:     addSecondUnix(-1),
 	}
 
-	m.store.On("GetAccessToken", "123").Return(expat, nil)
+	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := re.VerifyAccessToken(w, r)
+	at, resp := t.resource.VerifyAccessToken(w, r)
 
-	assert.Equal(t, errAccessTokenExpired, resp)
-	assert.Nil(t, at)
+	t.Equal(errAccessTokenExpired, resp)
+	t.Nil(at)
 }
 
-func TestResourceServer_VerifyAccessToken_Scope(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_Scope() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
@@ -192,17 +164,15 @@ func TestResourceServer_VerifyAccessToken_Scope(t *testing.T) {
 		Scope:       []string{"1", "2", "3"},
 	}
 
-	m.store.On("GetAccessToken", "123").Return(expat, nil)
+	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := re.VerifyAccessToken(w, r, "1", "2")
+	at, resp := t.resource.VerifyAccessToken(w, r, "1", "2")
 
-	assert.False(t, resp.IsError())
-	assert.Equal(t, expat, at)
+	t.False(resp.IsError())
+	t.Equal(expat, at)
 }
 
-func TestResourceServer_VerifyAccessToken_EmptyInToken(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_EmptyInToken() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
@@ -211,17 +181,15 @@ func TestResourceServer_VerifyAccessToken_EmptyInToken(t *testing.T) {
 		Expires:     addSecondUnix(60),
 	}
 
-	m.store.On("GetAccessToken", "123").Return(expat, nil)
+	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := re.VerifyAccessToken(w, r, "1")
+	at, resp := t.resource.VerifyAccessToken(w, r, "1")
 
-	assert.Equal(t, errInsufficientScope, resp)
-	assert.Nil(t, at)
+	t.Equal(errInsufficientScope, resp)
+	t.Nil(at)
 }
 
-func TestResourceServer_VerifyAccessToken_NoScopeSupport(t *testing.T) {
-	re, m := setupResourceServer()
-
+func (t *ResourceServerSuite) TestVerifyAccessToken_NoScopeSupport() {
 	w := httptest.NewRecorder()
 	r := getTokenRequest()
 
@@ -231,10 +199,19 @@ func TestResourceServer_VerifyAccessToken_NoScopeSupport(t *testing.T) {
 		Scope:       []string{"1", "2"},
 	}
 
-	m.store.On("GetAccessToken", "123").Return(expat, nil)
+	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := re.VerifyAccessToken(w, r, "1", "3")
+	at, resp := t.resource.VerifyAccessToken(w, r, "1", "3")
 
-	assert.Equal(t, errInsufficientScope, resp)
-	assert.Nil(t, at)
+	t.Equal(errInsufficientScope, resp)
+	t.Nil(at)
+}
+
+func getTokenRequest() *http.Request {
+	r, _ := http.NewRequest("GET", "/", nil)
+	q := r.URL.Query()
+	q.Add("access_token", "123")
+	r.URL.RawQuery = q.Encode()
+
+	return r
 }

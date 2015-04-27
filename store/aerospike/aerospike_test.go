@@ -42,6 +42,7 @@ func (t *StoreSuite) TestAccessToken() {
 		UserID:      "3",
 		Expires:     100,
 		Scope:       []string{"1", "2"},
+		Data:        map[string]interface{}{"a": "1", "b": 2},
 	}
 
 	//put

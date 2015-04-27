@@ -4,29 +4,25 @@ package clover
 //go:generate msgp
 
 type allstore interface {
-	AuthServerStore
+	ClientStore
 	UserStore
+	AccessTokenStore
 	RefreshTokenStore
 	AuthCodeStore
 	PublicKeyStore
 }
 
-type Store interface {
-	AuthServerStore
-	UserStore
-	RefreshTokenStore
-	AuthCodeStore
-	PublicKeyStore
-}
-
-type AuthServerStore interface {
+type ClientStore interface {
 	GetClient(id string) (Client, error)
-	SetAccessToken(accessToken *AccessToken) error
-	GetAccessToken(at string) (*AccessToken, error)
 }
 
 type UserStore interface {
 	GetUser(username, password string) (User, error)
+}
+
+type AccessTokenStore interface {
+	SetAccessToken(accessToken *AccessToken) error
+	GetAccessToken(at string) (*AccessToken, error)
 }
 
 type RefreshTokenStore interface {
@@ -52,34 +48,6 @@ type User interface {
 	GetScope() []string
 }
 
-type DefaultUser struct {
-	ID       string
-	Username string
-	Password string
-	Scope    []string
-	Data     map[string]interface{}
-}
-
-func (u *DefaultUser) GetID() string {
-	return u.ID
-}
-
-func (u *DefaultUser) GetUsername() string {
-	return u.Username
-}
-
-func (u *DefaultUser) GetPassword() string {
-	return u.Password
-}
-
-func (u *DefaultUser) GetData() map[string]interface{} {
-	return u.Data
-}
-
-func (u *DefaultUser) GetScope() []string {
-	return u.Scope
-}
-
 type Client interface {
 	GetClientID() string
 	GetClientSecret() string
@@ -88,44 +56,6 @@ type Client interface {
 	GetScope() []string
 	GetRedirectURI() string
 	GetData() map[string]interface{}
-}
-
-type DefaultClient struct {
-	ClientID     string
-	ClientSecret string
-	GrantType    []string
-	UserID       string
-	Scope        []string
-	RedirectURI  string
-	Data         map[string]interface{}
-}
-
-func (c *DefaultClient) GetClientID() string {
-	return c.ClientID
-}
-
-func (c *DefaultClient) GetClientSecret() string {
-	return c.ClientSecret
-}
-
-func (c *DefaultClient) GetGrantType() []string {
-	return c.GrantType
-}
-
-func (c *DefaultClient) GetUserID() string {
-	return c.UserID
-}
-
-func (c *DefaultClient) GetScope() []string {
-	return c.Scope
-}
-
-func (c *DefaultClient) GetRedirectURI() string {
-	return c.RedirectURI
-}
-
-func (c *DefaultClient) GetData() map[string]interface{} {
-	return c.Data
 }
 
 type RefreshToken struct {

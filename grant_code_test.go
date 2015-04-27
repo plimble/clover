@@ -1,25 +1,27 @@
 package clover
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/plimble/utils/errors2"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-type mockCodeGrant struct {
+type GrantCodeSuite struct {
+	suite.Suite
 	store *Mockallstore
+	grant GrantType
 }
 
-func setUpCodeGrant() (GrantType, *mockCodeGrant) {
-	store := NewMockallstore()
-	grant := newAuthCodeGrant(store)
-	mock := &mockCodeGrant{store}
-	return grant, mock
+func TestGrantCodeSuite(t *testing.T) {
+	suite.Run(t, &GrantCodeSuite{})
 }
 
-func TestCodeGrant_Validate(t *testing.T) {
-	c, m := setUpCodeGrant()
+func (t *GrantCodeSuite) SetupTest() {
+	t.store = NewMockallstore()
+	t.grant = NewAuthorizationCode(t.store)
+}
 
+func (t *GrantCodeSuite) TestValidate() {
 	ac := &AuthorizeCode{
 		ClientID:    "123",
 		UserID:      "abc",
@@ -39,31 +41,27 @@ func TestCodeGrant_Validate(t *testing.T) {
 		Scope:    ac.Scope,
 	}
 
-	m.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
+	t.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Nil(t, resp)
-	assert.EqualValues(t, grantData, expGrantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Nil(resp)
+	t.EqualValues(grantData, expGrantData)
 }
 
-func TestCodeGrant_Validate_WithNotFound(t *testing.T) {
-	c, m := setUpCodeGrant()
-
+func (t *GrantCodeSuite) TestValidate_WithNotFound() {
 	tr := &TokenRequest{
 		Code:        "123",
 		RedirectURI: "http://localhost",
 	}
 
-	m.store.On("GetAuthorizeCode", tr.Code).Return(nil, errors.New("not found"))
+	t.store.On("GetAuthorizeCode", tr.Code).Return(nil, errors2.NewAnyError())
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errAuthCodeNotExist, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errAuthCodeNotExist, resp)
+	t.Nil(grantData)
 }
 
-func TestCodeGrant_Validate_WithRedirectMisMatch(t *testing.T) {
-	c, m := setUpCodeGrant()
-
+func (t *GrantCodeSuite) TestValidate_WithRedirectMisMatch() {
 	ac := &AuthorizeCode{
 		ClientID:    "123",
 		UserID:      "abc",
@@ -77,16 +75,14 @@ func TestCodeGrant_Validate_WithRedirectMisMatch(t *testing.T) {
 		RedirectURI: "http://localhost",
 	}
 
-	m.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
+	t.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errRedirectMismatch, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errRedirectMismatch, resp)
+	t.Nil(grantData)
 }
 
-func TestCodeGrant_Validate_WithCodeExpired(t *testing.T) {
-	c, m := setUpCodeGrant()
-
+func (t *GrantCodeSuite) TestValidate_WithCodeExpired() {
 	ac := &AuthorizeCode{
 		ClientID:    "123",
 		UserID:      "abc",
@@ -100,41 +96,35 @@ func TestCodeGrant_Validate_WithCodeExpired(t *testing.T) {
 		RedirectURI: "http://localhost",
 	}
 
-	m.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
+	t.store.On("GetAuthorizeCode", tr.Code).Return(ac, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errAuthCodeExpired, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errAuthCodeExpired, resp)
+	t.Nil(grantData)
 }
 
-func TestCodeGrant_Validate_WithCodeEmpty(t *testing.T) {
-	c, _ := setUpCodeGrant()
-
+func (t *GrantCodeSuite) TestValidate_WithCodeEmpty() {
 	tr := &TokenRequest{
 		Code:        "",
 		RedirectURI: "http://localhost",
 	}
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errCodeRequired, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errCodeRequired, resp)
+	t.Nil(grantData)
 
 }
 
-func TestCodeGrant_GetGrantType(t *testing.T) {
-	c, _ := setUpCodeGrant()
-	grant := c.GetGrantType()
-	assert.Equal(t, AUTHORIZATION_CODE, grant)
+func (t *GrantCodeSuite) TestName() {
+	t.Equal(AUTHORIZATION_CODE, t.grant.Name())
 }
 
-func TestCodeGrant_CreateAccessToken(t *testing.T) {
-	c, _ := setUpCodeGrant()
+func (t *GrantCodeSuite) TestIncludeRefreshToken() {
+	t.True(t.grant.IncludeRefreshToken())
+}
 
+func (t *GrantCodeSuite) TestBeforeCreateAccessToken() {
+	tr := &TokenRequest{}
 	td := &TokenData{}
-	respType := NewMockResponseType()
-	respType.On("GetAccessToken", td, true).Return(nil)
-
-	c.CreateAccessToken(td, respType)
-
-	respType.AssertExpectations(t)
+	t.Nil(t.grant.BeforeCreateAccessToken(tr, td))
 }

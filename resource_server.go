@@ -6,12 +6,25 @@ import (
 	"strings"
 )
 
-type ResourceServer struct {
-	config *ResourceConfig
+type ResourceConfig struct {
+	WWWRealm string
 }
 
-func NewResourceServer(config *ResourceConfig) *ResourceServer {
-	return &ResourceServer{config}
+type ResourceServer struct {
+	config           *ResourceConfig
+	accessTokenStore AccessTokenStore
+}
+
+func NewResourceServer(accessTokenStore AccessTokenStore, config *ResourceConfig) *ResourceServer {
+	if config.WWWRealm == "" {
+		config.WWWRealm = "Service"
+	}
+
+	return &ResourceServer{config, accessTokenStore}
+}
+
+func (s *ResourceServer) UseJWTAccessToken(publicKeyStore PublicKeyStore) {
+	s.accessTokenStore = newJWTTokenStore(publicKeyStore)
 }
 
 func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Request, scopes ...string) (*AccessToken, *Response) {
@@ -20,7 +33,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(resp, nil, w)
 	}
 
-	at, err := s.config.AuthServerStore.GetAccessToken(token)
+	at, err := s.accessTokenStore.GetAccessToken(token)
 	if err != nil {
 		return nil, s.setHeader(errInvalidAccessToken, nil, w)
 	}

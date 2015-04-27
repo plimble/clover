@@ -11,29 +11,26 @@ const (
 	// JWT_GRANT          = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 )
 
-type Grants map[string]GrantType
-
 type GrantData struct {
-	ClientID     string
-	UserID       string
-	Scope        []string
-	GrantType    []string
-	RefreshToken string
-	Data         map[string]interface{}
+	ClientID string
+	UserID   string
+	Scope    []string
+	Data     map[string]interface{}
 }
 
-func checkGrantType(grants []string, grant string) bool {
-	for _, v := range grants {
-		if grant == v {
+type GrantType interface {
+	Validate(tr *TokenRequest) (*GrantData, *Response)
+	Name() string
+	IncludeRefreshToken() bool
+	BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response
+}
+
+func checkGrantType(available []string, request string) bool {
+	for i := 0; i < len(available); i++ {
+		if available[i] == request {
 			return true
 		}
 	}
 
 	return false
-}
-
-type GrantType interface {
-	Validate(tr *TokenRequest) (*GrantData, *Response)
-	GetGrantType() string
-	CreateAccessToken(td *TokenData, respType TokenRespType) *Response
 }

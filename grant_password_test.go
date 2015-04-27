@@ -1,28 +1,24 @@
 package clover
 
 import (
-	"errors"
+	"github.com/plimble/utils/errors2"
+	"github.com/stretchr/testify/suite"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-type mockPasswordGrant struct {
+type GrantPasswordSuite struct {
+	suite.Suite
 	store *Mockallstore
+	grant GrantType
 }
 
-func setUpPasswordGrant() (GrantType, *mockPasswordGrant) {
-	store := NewMockallstore()
-	grant := newPasswordGrant(store)
-	mock := &mockPasswordGrant{store}
-	return grant, mock
+func TestGrantPasswordSuite(t *testing.T) {
+	suite.Run(t, &GrantPasswordSuite{})
 }
 
-func TestPasswordGrant_Validate(t *testing.T) {
-	c, m := setUpPasswordGrant()
-
+func (t *GrantPasswordSuite) TestValidate() {
 	tr := &TokenRequest{
-		Username: "abc",
+		Username: "test",
 		Password: "xyz",
 	}
 
@@ -32,63 +28,60 @@ func TestPasswordGrant_Validate(t *testing.T) {
 		Data:   map[string]interface{}{"a": 1, "b": "1"},
 	}
 
-	u := &DefaultUser{
+	u := &TestUser{
 		ID:       "001",
 		Username: "test",
-		Password: "1234",
+		Password: "xyz",
 		Scope:    []string{"1", "2", "3"},
 		Data:     map[string]interface{}{"a": 1, "b": "1"},
 	}
 
-	m.store.On("GetUser", tr.Username, tr.Password).Return(u, nil)
+	t.store.On("GetUser", tr.Username, tr.Password).Return(u, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Nil(t, resp)
-	assert.EqualValues(t, grantData, expGrantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Nil(resp)
+	t.EqualValues(expGrantData, grantData)
 }
 
-func TestPasswordGrant_Validate_WithNotFound(t *testing.T) {
-	c, m := setUpPasswordGrant()
-
+func (t *GrantPasswordSuite) TestValidate_WithNotFound() {
 	tr := &TokenRequest{
 		Username: "abc",
 		Password: "xyz",
 	}
 
-	m.store.On("GetUser", tr.Username, tr.Password).Return(nil, errors.New("not found"))
+	t.store.On("GetUser", tr.Username, tr.Password).Return(nil, errors2.NewAnyError())
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errInvalidUsernamePAssword, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errInvalidUsernamePAssword, resp)
+	t.Nil(grantData)
 }
 
-func TestPasswordGrant_Validate_WithUsernamePasswordRequired(t *testing.T) {
-	c, _ := setUpPasswordGrant()
-
+func (t *GrantPasswordSuite) TestValidate_WithUsernamePasswordRequired() {
 	tr := &TokenRequest{
 		Username: "",
 		Password: "",
 	}
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errUsernamePasswordRequired, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errUsernamePasswordRequired, resp)
+	t.Nil(grantData)
 }
 
-func TestPasswordGrant_GetGrantType(t *testing.T) {
-	c, _ := setUpPasswordGrant()
-	grant := c.GetGrantType()
-	assert.Equal(t, PASSWORD, grant)
+func (t *GrantPasswordSuite) SetupTest() {
+	t.store = NewMockallstore()
+	t.grant = NewPassword(t.store)
 }
 
-func TestPasswordGrant_CreateAccessToken(t *testing.T) {
-	c, _ := setUpPasswordGrant()
+func (t *GrantPasswordSuite) TestName() {
+	t.Equal(PASSWORD, t.grant.Name())
+}
 
+func (t *GrantPasswordSuite) TestIncludeRefreshToken() {
+	t.True(t.grant.IncludeRefreshToken())
+}
+
+func (t *GrantPasswordSuite) TestBeforeCreateAccessToken() {
+	tr := &TokenRequest{}
 	td := &TokenData{}
-	respType := NewMockResponseType()
-	respType.On("GetAccessToken", td, true).Return(nil)
-
-	c.CreateAccessToken(td, respType)
-
-	respType.AssertExpectations(t)
+	t.Nil(t.grant.BeforeCreateAccessToken(tr, td))
 }

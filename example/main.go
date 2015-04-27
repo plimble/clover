@@ -4,26 +4,15 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/plimble/ace"
 	"github.com/plimble/ace-contrib/pongo2"
+	"github.com/plimble/aero"
 	"github.com/plimble/clover"
-	"github.com/plimble/clover/store/mongo"
+	aeroClover "github.com/plimble/clover/store/aerospike"
 	"gopkg.in/mgo.v2"
 	"net/url"
 )
 
-func setupStore(session *mgo.Session) *mongo.Storage {
-	session.DB("oauth").C("oauth_client").UpsertId("1001", clover.DefaultClient{
-		ClientID:     "1001",
-		ClientSecret: "xyz",
-		GrantType:    []string{clover.AUTHORIZATION_CODE, clover.PASSWORD, clover.CLIENT_CREDENTIALS, clover.REFRESH_TOKEN, clover.IMPLICIT},
-		UserID:       "1",
-		Scope:        []string{"read_my_timeline", "read_my_friend"},
-		RedirectURI:  "http://localhost:4000/callback",
-	})
-
-	db := "oauth"
-	m := mongo.New(session, db)
-	m.RegisterGetClientFunc(getClient(session, db))
-	m.RegisterGetUserFunc(getUser(session, db))
+func setupStore(client *aero.Client) *aeroClover.AeroStore {
+	aeroClover.New(asClient, ns, tokenLifeTime, authCodeLifetime, refresLifeTime)
 	return m
 }
 

@@ -9,9 +9,6 @@ import (
 var errNoPublicKey = errors2.NewInternal("No publickey in store")
 var errNotFound = errors2.NewNotFound("not found")
 
-type GetUserFunc func(username, password string) (string, []string, error)
-type GetClientFunc func(clientID string) (Client, error)
-
 type AeroStore struct {
 	client           *aero.Client
 	ns               string
@@ -25,36 +22,6 @@ type AeroStore struct {
 
 func New(asClient *aero.Client, ns string, tokenLifeTime, authCodeLifetime, refresLifeTime int) *AeroStore {
 	return &AeroStore{asClient, ns, nil, nil, nil, tokenLifeTime, authCodeLifetime, refresLifeTime}
-}
-
-func (s *AeroStore) RegisterGetUserFunc(fn GetUserFunc) {
-	s.getUserFunc = fn
-}
-
-func (s *AeroStore) RegisterGetClientFunc(fn GetClientFunc) {
-	s.getClientFunc = fn
-}
-
-func (s *AeroStore) Close() {
-	s.client.Close()
-}
-
-func (s *AeroStore) GetUser(username, password string) (string, []string, error) {
-	if s.getUserFunc == nil {
-		panic("Not implement GetUserFunc")
-	}
-
-	id, scopes, err := s.getUserFunc(username, password)
-	return id, scopes, err
-}
-
-func (s *AeroStore) GetClient(cid string) (Client, error) {
-	if s.getClientFunc == nil {
-		panic("Not implement GetClientFunc")
-	}
-
-	client, err := s.getClientFunc(cid)
-	return client, err
 }
 
 func (s *AeroStore) SetAccessToken(accessToken *AccessToken) error {

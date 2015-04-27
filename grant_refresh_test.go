@@ -1,25 +1,27 @@
 package clover
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/plimble/utils/errors2"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-type mockRefreshGrant struct {
+type GrantRefreshSuite struct {
+	suite.Suite
 	store *Mockallstore
+	grant GrantType
 }
 
-func setUpRefreshGrant() (GrantType, *mockRefreshGrant) {
-	store := NewMockallstore()
-	grant := newRefreshGrant(store)
-	mock := &mockRefreshGrant{store}
-	return grant, mock
+func TestGrantRefreshSuite(t *testing.T) {
+	suite.Run(t, &GrantRefreshSuite{})
 }
 
-func TestRefreshGrant_Validate(t *testing.T) {
-	c, m := setUpRefreshGrant()
+func (t *GrantRefreshSuite) SetupTest() {
+	t.store = NewMockallstore()
+	t.grant = NewRefreshToken(t.store)
+}
 
+func (t *GrantRefreshSuite) TestValidate() {
 	rt := &RefreshToken{
 		RefreshToken: "xyz",
 		ClientID:     "123",
@@ -33,36 +35,31 @@ func TestRefreshGrant_Validate(t *testing.T) {
 	}
 
 	expGrantData := &GrantData{
-		ClientID:     rt.ClientID,
-		UserID:       rt.UserID,
-		Scope:        rt.Scope,
-		RefreshToken: rt.RefreshToken,
+		ClientID: rt.ClientID,
+		UserID:   rt.UserID,
+		Scope:    rt.Scope,
 	}
 
-	m.store.On("GetRefreshToken", tr.RefreshToken).Return(rt, nil)
+	t.store.On("GetRefreshToken", tr.RefreshToken).Return(rt, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Nil(t, resp)
-	assert.EqualValues(t, grantData, expGrantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Nil(resp)
+	t.EqualValues(expGrantData, grantData)
 }
 
-func TestRefreshGrant_Validate_WithNotFound(t *testing.T) {
-	c, m := setUpRefreshGrant()
-
+func (t *GrantRefreshSuite) TestValidate_WithNotFound() {
 	tr := &TokenRequest{
 		RefreshToken: "xyz",
 	}
 
-	m.store.On("GetRefreshToken", tr.RefreshToken).Return(nil, errors.New("not found"))
+	t.store.On("GetRefreshToken", tr.RefreshToken).Return(nil, errors2.NewAnyError())
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errInvalidRefreshToken, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errInvalidRefreshToken, resp)
+	t.Nil(grantData)
 }
 
-func TestRefreshGrant_Validate_WithTokenExpired(t *testing.T) {
-	c, m := setUpRefreshGrant()
-
+func (t *GrantRefreshSuite) TestValidate_WithTokenExpired() {
 	rt := &RefreshToken{
 		RefreshToken: "xyz",
 		ClientID:     "123",
@@ -75,65 +72,37 @@ func TestRefreshGrant_Validate_WithTokenExpired(t *testing.T) {
 		RefreshToken: "xyz",
 	}
 
-	m.store.On("GetRefreshToken", tr.RefreshToken).Return(rt, nil)
+	t.store.On("GetRefreshToken", tr.RefreshToken).Return(rt, nil)
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errRefreshTokenExpired, resp)
-	assert.Nil(t, grantData)
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errRefreshTokenExpired, resp)
+	t.Nil(grantData)
 }
 
-func TestRefreshGrant_Validate_WithTokenEmpty(t *testing.T) {
-	c, _ := setUpRefreshGrant()
-
+func (t *GrantRefreshSuite) TestValidate_WithTokenEmpty() {
 	tr := &TokenRequest{
 		RefreshToken: "",
 	}
 
-	grantData, resp := c.Validate(tr)
-	assert.Equal(t, errRefreshTokenRequired, resp)
-	assert.Nil(t, grantData)
-
+	grantData, resp := t.grant.Validate(tr)
+	t.Equal(errRefreshTokenRequired, resp)
+	t.Nil(grantData)
 }
 
-func TestRefreshGrant_GetGrantType(t *testing.T) {
-	c, _ := setUpRefreshGrant()
-	grant := c.GetGrantType()
-	assert.Equal(t, REFRESH_TOKEN, grant)
+func (t *GrantRefreshSuite) TestName() {
+	t.Equal(REFRESH_TOKEN, t.grant.Name())
 }
 
-func TestRefreshGrant_CreateAccessToken(t *testing.T) {
-	c, m := setUpRefreshGrant()
+func (t *GrantRefreshSuite) TestIncludeRefreshToken() {
+	t.True(t.grant.IncludeRefreshToken())
+}
 
-	td := &TokenData{
-		GrantData: &GrantData{
-			RefreshToken: "123",
-		},
+func (t *GrantRefreshSuite) TestBeforeCreateAccessToken() {
+	tr := &TokenRequest{
+		RefreshToken: "1234",
 	}
-	respType := NewMockResponseType()
+	td := &TokenData{}
 
-	m.store.On("RemoveRefreshToken", td.GrantData.RefreshToken).Return(nil)
-	respType.On("GetAccessToken", td, true).Return(nil)
-
-	c.CreateAccessToken(td, respType)
-
-	m.store.AssertExpectations(t)
-	respType.AssertExpectations(t)
-}
-
-func TestRefreshGrant_CreateAccessToken_WithCannotRemoveToken(t *testing.T) {
-	c, m := setUpRefreshGrant()
-
-	td := &TokenData{
-		GrantData: &GrantData{
-			RefreshToken: "123",
-		},
-	}
-	respType := NewMockResponseType()
-
-	m.store.On("RemoveRefreshToken", td.GrantData.RefreshToken).Return(errors.New("error"))
-	resp := c.CreateAccessToken(td, respType)
-
-	assert.True(t, resp.IsError())
-	m.store.AssertExpectations(t)
-	respType.AssertExpectations(t)
+	t.store.On("RemoveRefreshToken", tr.RefreshToken).Return(nil)
+	t.Nil(t.grant.BeforeCreateAccessToken(tr, td))
 }

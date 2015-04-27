@@ -17,13 +17,12 @@ const (
 
 type Response struct {
 	code        int
-	data        map[string]interface{}
 	isFragment  bool
 	redirectURI string
 	isErr       bool
+	data        map[string]interface{}
+	state       string
 }
-
-type respData map[string]interface{}
 
 func (r *Response) IsError() bool {
 	return r.isErr
@@ -33,35 +32,16 @@ func (r *Response) IsRedirect() bool {
 	return r.code == 302
 }
 
-func (r *Response) setRedirect(uri, respType, state string) *Response {
+func (r *Response) setRedirect(uri string, fragment bool, state string) *Response {
 	r.redirectURI = uri
 	r.code = 302
 
-	if respType == RESP_TYPE_TOKEN {
-		r.isFragment = true
-	}
-
+	r.isFragment = fragment
 	if state != "" {
 		r.data["state"] = state
 	}
 
 	return r
-}
-
-func (r *Response) clone() *Response {
-	newR := &Response{
-		code:        r.code,
-		isFragment:  r.isFragment,
-		redirectURI: r.redirectURI,
-		isErr:       r.isErr,
-		data:        make(map[string]interface{}),
-	}
-
-	for k, v := range r.data {
-		newR.data[k] = v
-	}
-
-	return newR
 }
 
 func (r *Response) Write(w http.ResponseWriter) {
@@ -105,18 +85,12 @@ func (r *Response) redirect(w http.ResponseWriter) {
 	w.WriteHeader(302)
 }
 
-func newResp() *Response {
-	return &Response{
-		code: 200,
-	}
-}
-
-func newRespErr(code int, key, desc string) *Response {
+func newErrResp(code int, title, desc string) *Response {
 	return &Response{
 		code:  code,
 		isErr: true,
 		data: map[string]interface{}{
-			"error":             key,
+			"error":             title,
 			"error_description": desc,
 		},
 	}

@@ -10,38 +10,44 @@ var (
 	errNotFound = errors.New("not found")
 )
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type GetUserFunc func(username, password string) (string, []string, error)
-type GetClientFunc func(clientID string) (clover.Client, error)
-
-type Storage struct {
-	Client      map[string]*clover.DefaultClient
+type Store struct {
+	User        map[string]clover.User
+	Client      map[string]clover.Client
 	Refresh     map[string]*clover.RefreshToken
 	AuthCode    map[string]*clover.AuthorizeCode
 	AccessToken map[string]*clover.AccessToken
-	User        map[string]*User
 	PublicKey   map[string]*clover.PublicKey
 	cPublicKey  string
 	cPrivateKey string
 	cHmacKey    string
 }
 
-func New() *Storage {
-	return &Storage{
-		Client:      make(map[string]*clover.DefaultClient),
+func New() *Store {
+	return &Store{
+		User:        make(map[string]clover.User),
+		Client:      make(map[string]clover.Client),
 		Refresh:     make(map[string]*clover.RefreshToken),
 		AuthCode:    make(map[string]*clover.AuthorizeCode),
 		AccessToken: make(map[string]*clover.AccessToken),
-		User:        make(map[string]*User),
 		PublicKey:   make(map[string]*clover.PublicKey),
 	}
 }
 
-func (s *Storage) GetClient(id string) (clover.Client, error) {
+func (s *Store) Flush() {
+	s.User = make(map[string]clover.User)
+	s.Client = make(map[string]clover.Client)
+	s.Refresh = make(map[string]*clover.RefreshToken)
+	s.AuthCode = make(map[string]*clover.AuthorizeCode)
+	s.AccessToken = make(map[string]*clover.AccessToken)
+	s.PublicKey = make(map[string]*clover.PublicKey)
+}
+
+func (s *Store) SetClient(c clover.Client) error {
+	s.Client[c.GetClientID()] = c
+	return nil
+}
+
+func (s *Store) GetClient(id string) (clover.Client, error) {
 	client, ok := s.Client[id]
 	if !ok {
 		return nil, errNotFound
@@ -50,12 +56,12 @@ func (s *Storage) GetClient(id string) (clover.Client, error) {
 	return client, nil
 }
 
-func (s *Storage) SetAccessToken(accessToken *clover.AccessToken) error {
+func (s *Store) SetAccessToken(accessToken *clover.AccessToken) error {
 	s.AccessToken[accessToken.AccessToken] = accessToken
 	return nil
 }
 
-func (s *Storage) GetAccessToken(at string) (*clover.AccessToken, error) {
+func (s *Store) GetAccessToken(at string) (*clover.AccessToken, error) {
 	accesstoken, ok := s.AccessToken[at]
 	if !ok {
 		return nil, errNotFound
@@ -64,12 +70,12 @@ func (s *Storage) GetAccessToken(at string) (*clover.AccessToken, error) {
 	return accesstoken, nil
 }
 
-func (s *Storage) SetRefreshToken(rt *clover.RefreshToken) error {
+func (s *Store) SetRefreshToken(rt *clover.RefreshToken) error {
 	s.Refresh[rt.RefreshToken] = rt
 	return nil
 }
 
-func (s *Storage) GetRefreshToken(rt string) (*clover.RefreshToken, error) {
+func (s *Store) GetRefreshToken(rt string) (*clover.RefreshToken, error) {
 	refreshtoken, ok := s.Refresh[rt]
 	if !ok {
 		return nil, errNotFound
@@ -78,7 +84,7 @@ func (s *Storage) GetRefreshToken(rt string) (*clover.RefreshToken, error) {
 	return refreshtoken, nil
 }
 
-func (s *Storage) RemoveRefreshToken(rt string) error {
+func (s *Store) RemoveRefreshToken(rt string) error {
 	_, ok := s.Refresh[rt]
 	if !ok {
 		return errNotFound
@@ -89,12 +95,12 @@ func (s *Storage) RemoveRefreshToken(rt string) error {
 	return nil
 }
 
-func (s *Storage) SetAuthorizeCode(ac *clover.AuthorizeCode) error {
+func (s *Store) SetAuthorizeCode(ac *clover.AuthorizeCode) error {
 	s.AuthCode[ac.Code] = ac
 	return nil
 }
 
-func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
+func (s *Store) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 	authcode, ok := s.AuthCode[code]
 	if !ok {
 		return nil, errNotFound
@@ -103,20 +109,25 @@ func (s *Storage) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 	return authcode, nil
 }
 
-func (s *Storage) GetUser(username, password string) (string, []string, error) {
-	user, ok := s.User[username]
-	if !ok {
-		return "", nil, errNotFound
-	}
-
-	if password != user.Password {
-		return "", nil, errors.New("invalid username or password")
-	}
-
-	return user.Username, nil, nil
+func (s *Store) SetUser(u clover.User) error {
+	s.User[u.GetUsername()] = u
+	return nil
 }
 
-func (s *Storage) GetKey(clientID string) (*clover.PublicKey, error) {
+func (s *Store) GetUser(username, password string) (clover.User, error) {
+	user, ok := s.User[username]
+	if !ok {
+		return nil, errNotFound
+	}
+
+	if password != user.GetPassword() {
+		return nil, errors.New("invalid username or password")
+	}
+
+	return user, nil
+}
+
+func (s *Store) GetKey(clientID string) (*clover.PublicKey, error) {
 	pub, ok := s.PublicKey[clientID]
 	if !ok {
 		return nil, errNotFound
@@ -125,12 +136,12 @@ func (s *Storage) GetKey(clientID string) (*clover.PublicKey, error) {
 	return pub, nil
 }
 
-func (s *Storage) setHmacKey() {
+func (s *Store) setHmacKey() {
 	b, _ := ioutil.ReadFile("../tests/jwt_test/hmac")
 	s.cHmacKey = string(b)
 }
 
-func (s *Storage) setRSKey() {
+func (s *Store) setRSKey() {
 	b, _ := ioutil.ReadFile("../tests/jwt_test/sample_key")
 	s.cPrivateKey = string(b)
 
@@ -138,7 +149,7 @@ func (s *Storage) setRSKey() {
 	s.cPublicKey = string(b)
 }
 
-func (s *Storage) AddRSKey(clientID string) {
+func (s *Store) AddRSKey(clientID string) {
 	if s.cPublicKey == "" || s.cPrivateKey == "" {
 		s.setRSKey()
 	}
@@ -153,7 +164,7 @@ func (s *Storage) AddRSKey(clientID string) {
 	}
 }
 
-func (s *Storage) AddHSKey(clientID string) {
+func (s *Store) AddHSKey(clientID string) {
 	if s.cHmacKey == "" {
 		s.setHmacKey()
 	}

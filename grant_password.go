@@ -4,7 +4,7 @@ type passwordGrant struct {
 	store UserStore
 }
 
-func newPasswordGrant(store UserStore) GrantType {
+func NewPassword(store UserStore) GrantType {
 	return &passwordGrant{store}
 }
 
@@ -26,10 +26,14 @@ func (g *passwordGrant) Validate(tr *TokenRequest) (*GrantData, *Response) {
 	}, nil
 }
 
-func (g *passwordGrant) GetGrantType() string {
+func (g *passwordGrant) Name() string {
 	return PASSWORD
 }
 
-func (g *passwordGrant) CreateAccessToken(td *TokenData, respType TokenRespType) *Response {
-	return respType.GetAccessToken(td, true)
+func (g *passwordGrant) IncludeRefreshToken() bool {
+	return true
+}
+
+func (g *passwordGrant) BeforeCreateAccessToken(tr *TokenRequest, td *TokenData) *Response {
+	return nil
 }
