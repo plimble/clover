@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-type PasswordSuite struct {
+type JWTAccessTokenSuite struct {
 	suite.Suite
 	authConfig     *AuthServerConfig
 	resourceConfig *ResourceConfig
@@ -17,14 +17,13 @@ type PasswordSuite struct {
 	resourceServer *ResourceServer
 	store          *memory.Store
 	client         *TestClient
-	user           *TestUser
 }
 
-func TestPasswordSuite(t *testing.T) {
-	suite.Run(t, &PasswordSuite{})
+func TestJWTAccessTokenSuite(t *testing.T) {
+	suite.Run(t, &JWTAccessTokenSuite{})
 }
 
-func (t *PasswordSuite) SetupSuite() {
+func (t *JWTAccessTokenSuite) SetupSuite() {
 	t.store = memory.New()
 
 	t.authConfig = &AuthServerConfig{}
@@ -32,14 +31,15 @@ func (t *PasswordSuite) SetupSuite() {
 
 	t.authServer = NewAuthServer(t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
+	t.resourceServer.UseJWTAccessToken(t.store)
 
-	t.authServer.AddGrantType(NewPassword(t.store))
-	t.authServer.SetAccessTokenRespType(NewAccessTokenRespType(t.store, t.store, 3600, 5000))
+	t.authServer.AddGrantType(NewClientCredential(t.store))
+	t.authServer.SetAccessTokenRespType(NewJWTAccessTokenRespType(t.store, t.store, 3600, 5000))
 
 	t.client = &TestClient{
 		ClientID:     "001",
 		ClientSecret: "abc",
-		GrantType:    []string{PASSWORD},
+		GrantType:    []string{CLIENT_CREDENTIALS},
 		Scope:        []string{"read", "write"},
 		RedirectURI:  "http://localhost/callback",
 		Data: map[string]interface{}{
@@ -47,38 +47,27 @@ func (t *PasswordSuite) SetupSuite() {
 			"email":        "test@test.com",
 		},
 	}
-
-	t.user = &TestUser{
-		ID:       "111",
-		Username: "tester",
-		Password: "1234",
-		Data: map[string]interface{}{
-			"email": "test@test.com",
-		},
-	}
 }
 
-func (t *PasswordSuite) SetupTest() {
+func (t *JWTAccessTokenSuite) SetupTest() {
 	t.store.SetClient(t.client)
-	t.store.SetUser(t.user)
+	t.store.AddHSKey(t.client.ClientID)
 }
 
-func (t PasswordSuite) TearDownTest() {
+func (t JWTAccessTokenSuite) TearDownTest() {
 	t.store.Flush()
 }
 
-func (t *PasswordSuite) defaultReqToken() *http.Request {
+func (t *JWTAccessTokenSuite) defaultReqToken() *http.Request {
 	r, _ := http.NewRequest("POST", "/", nil)
 	r.Header.Set("Authorization", auth(t.client.ClientID, t.client.ClientSecret))
 	r.ParseForm()
-	r.PostForm.Set("username", t.user.Username)
-	r.PostForm.Set("password", t.user.Password)
-	r.PostForm.Set("grant_type", PASSWORD)
+	r.PostForm.Set("grant_type", CLIENT_CREDENTIALS)
 
 	return r
 }
 
-func (t *PasswordSuite) TestRequestAccessToken_Default() {
+func (t *JWTAccessTokenSuite) TestRequestAccessToken_Default() {
 	//reuest access token
 	r := t.defaultReqToken()
 
@@ -90,13 +79,13 @@ func (t *PasswordSuite) TestRequestAccessToken_Default() {
 
 	t.Equal(200, w.Code)
 	t.Equal(3600, token.ExpiresIn)
-	t.Len(token.Data, 1)
+	t.Len(token.Data, 2)
 	t.NotEmpty(token.AccessToken)
 	t.True(token.existScope("read"))
 	t.True(token.existScope("write"))
 }
 
-func (t *PasswordSuite) TestRequestAccessToken_CustomScope() {
+func (t *JWTAccessTokenSuite) TestRequestAccessToken_CustomScope() {
 	//reuest access token
 	r := t.defaultReqToken()
 	r.PostForm.Set("scope", "read")
@@ -113,7 +102,7 @@ func (t *PasswordSuite) TestRequestAccessToken_CustomScope() {
 	t.False(token.existScope("write"))
 }
 
-func (t *PasswordSuite) TestVerifyAccessToken() {
+func (t *JWTAccessTokenSuite) TestVerifyAccessToken() {
 	//reuest access token
 	r := t.defaultReqToken()
 	r.PostForm.Set("scope", "read")
@@ -138,5 +127,5 @@ func (t *PasswordSuite) TestVerifyAccessToken() {
 	w = httptest.NewRecorder()
 	at, resp := t.resourceServer.VerifyAccessToken(w, r, "read")
 	t.False(resp.IsError())
-	t.Equal(token.AccessToken, at.AccessToken)
+	t.NotNil(at)
 }

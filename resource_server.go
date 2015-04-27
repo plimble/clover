@@ -7,7 +7,17 @@ import (
 )
 
 type ResourceConfig struct {
-	WWWRealm string
+	WWWRealm              string
+	TokenBearerHeaderName string
+	TokenParamName        string
+}
+
+func DefaultResourceConfig() *ResourceConfig {
+	return &ResourceConfig{
+		WWWRealm:              "Service",
+		TokenBearerHeaderName: "Bearer",
+		TokenParamName:        "access_token",
+	}
 }
 
 type ResourceServer struct {
@@ -60,7 +70,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.ResponseWriter) *Response {
 	strs := []string{}
 	// authHeader := string2.Concat(`Bearer realm="`, s.config.WWWRealm, `"`)
-	strs = append(strs, `Bearer realm="`, s.config.WWWRealm, `"`)
+	strs = append(strs, s.config.TokenBearerHeaderName, ` realm="`, s.config.WWWRealm, `"`)
 
 	if len(scopes) > 0 {
 		// authHeader = string2.Concat(authHeader, `, scopes="`, strings.Join(scopes, " "), `"`)
@@ -79,8 +89,8 @@ func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.Respo
 
 func (s *ResourceServer) getTokenFromHttp(r *http.Request) (string, *Response) {
 	auth := r.Header.Get(`Authorization`)
-	postAuth := r.PostFormValue("access_token")
-	getAuth := r.URL.Query().Get("access_token")
+	postAuth := r.PostFormValue(s.config.TokenParamName)
+	getAuth := r.URL.Query().Get(s.config.TokenParamName)
 
 	methodsUsed := 0
 	if auth != "" {
@@ -105,7 +115,7 @@ func (s *ResourceServer) getTokenFromHttp(r *http.Request) (string, *Response) {
 
 	if auth != "" {
 		strs := strings.Fields(auth)
-		if len(strs) < 2 || strs[0] != "Bearer" {
+		if len(strs) < 2 || strs[0] != s.config.TokenBearerHeaderName {
 			return "", errMalFormedHeader
 		}
 		return strs[1], nil

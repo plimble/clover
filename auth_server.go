@@ -7,12 +7,16 @@ import (
 )
 
 type AuthServerConfig struct {
-	AccessLifeTime       int
-	AuthCodeLifeTime     int
-	AllowImplicit        bool
 	StateParamRequired   bool
 	DefaultScopes        []string
 	AllowCredentialsBody bool
+}
+
+func DefaultAuthServerConfig() *AuthServerConfig {
+	return &AuthServerConfig{
+		StateParamRequired:   true,
+		AllowCredentialsBody: false,
+	}
 }
 
 type authorizeRequest struct {

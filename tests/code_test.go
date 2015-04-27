@@ -27,7 +27,7 @@ func (t *CodeSuite) SetupSuite() {
 	t.store = memory.New()
 
 	t.authConfig = &AuthServerConfig{}
-	t.resourceConfig = &ResourceConfig{}
+	t.resourceConfig = DefaultResourceConfig()
 
 	t.authServer = NewAuthServer(t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
@@ -182,4 +182,54 @@ func (t *CodeSuite) TestRequestAccessToken_RequiredState() {
 
 	t.True(token.existScope("read"))
 	t.False(token.existScope("write"))
+}
+
+func (t *CodeSuite) TestVerifyAccessToken() {
+	//request authroize code
+	r := t.defaultReqAuthorize()
+	t.authConfig.StateParamRequired = false
+
+	w := httptest.NewRecorder()
+
+	resp := t.authServer.Authorize(w, r, true)
+	resp.Write(w)
+
+	location := w.Header().Get("LOCATION")
+
+	t.Empty(w.Body.String())
+
+	t.Equal(302, w.Code)
+	t.Equal(t.client.RedirectURI, getURL(location))
+	t.NotEmpty(existQuery(location, "code"))
+	t.Equal("", w.Body.String())
+
+	code := getQuery(location, "code")
+
+	//reuest access token
+	r = t.defaultReqToken(code)
+
+	w = httptest.NewRecorder()
+	resp = t.authServer.Token(w, r)
+	resp.Write(w)
+
+	token := getToken(w.Body.Bytes())
+
+	t.Equal(200, w.Code)
+	t.Equal(3600, token.ExpiresIn)
+	t.Len(token.Data, 0)
+	t.NotEmpty(token.AccessToken)
+	t.NotEmpty(token.RefreshToken)
+	t.True(token.existScope("read"))
+	t.True(token.existScope("write"))
+
+	//verify access token
+	r, _ = http.NewRequest("GET", "/", nil)
+	q := r.URL.Query()
+	q.Set("access_token", token.AccessToken)
+	r.URL.RawQuery = q.Encode()
+
+	w = httptest.NewRecorder()
+	at, resp := t.resourceServer.VerifyAccessToken(w, r, "read")
+	t.False(resp.IsError())
+	t.Equal(token.AccessToken, at.AccessToken)
 }

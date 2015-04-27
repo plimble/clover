@@ -20,7 +20,7 @@ func TestResourceServer(t *testing.T) {
 
 func (t *ResourceServerSuite) SetupTest() {
 	t.store = NewMockallstore()
-	config := &ResourceConfig{}
+	config := DefaultResourceConfig()
 	t.resource = NewResourceServer(t.store, config)
 }
 

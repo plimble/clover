@@ -27,7 +27,7 @@ func (t *ImplicitSuite) SetupSuite() {
 	t.store = memory.New()
 
 	t.authConfig = &AuthServerConfig{}
-	t.resourceConfig = &ResourceConfig{}
+	t.resourceConfig = DefaultResourceConfig()
 
 	t.authServer = NewAuthServer(t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)

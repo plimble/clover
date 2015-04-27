@@ -27,7 +27,7 @@ func (t *ClientSuite) SetupSuite() {
 	t.store = memory.New()
 
 	t.authConfig = &AuthServerConfig{}
-	t.resourceConfig = &ResourceConfig{}
+	t.resourceConfig = DefaultResourceConfig()
 
 	t.authServer = NewAuthServer(t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
@@ -98,4 +98,32 @@ func (t *ClientSuite) TestRequestAccessToken_CustomScope() {
 
 	t.True(token.existScope("read"))
 	t.False(token.existScope("write"))
+}
+
+func (t *ClientSuite) TestVerifyAccessToken() {
+	//reuest access token
+	r := t.defaultReqToken()
+	r.PostForm.Set("scope", "read")
+
+	w := httptest.NewRecorder()
+	resp := t.authServer.Token(w, r)
+	resp.Write(w)
+
+	token := getToken(w.Body.Bytes())
+
+	t.Equal(200, w.Code)
+
+	t.True(token.existScope("read"))
+	t.False(token.existScope("write"))
+
+	//verify access token
+	r, _ = http.NewRequest("GET", "/", nil)
+	q := r.URL.Query()
+	q.Set("access_token", token.AccessToken)
+	r.URL.RawQuery = q.Encode()
+
+	w = httptest.NewRecorder()
+	at, resp := t.resourceServer.VerifyAccessToken(w, r, "read")
+	t.False(resp.IsError())
+	t.Equal(token.AccessToken, at.AccessToken)
 }
