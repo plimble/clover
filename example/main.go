@@ -1,41 +1,18 @@
 package main
 
 import (
-	"github.com/gorilla/sessions"
 	"github.com/plimble/ace"
 	"github.com/plimble/ace-contrib/pongo2"
-	"github.com/plimble/aero"
 	"github.com/plimble/clover"
-	aeroClover "github.com/plimble/clover/store/aerospike"
-	"gopkg.in/mgo.v2"
+	"github.com/plimble/clover/store/memory"
+	"github.com/plimble/clover/tests"
+	"github.com/plimble/sessions/store/cookie"
 	"net/url"
 )
 
-func setupStore(client *aero.Client) *aeroClover.AeroStore {
-	aeroClover.New(asClient, ns, tokenLifeTime, authCodeLifetime, refresLifeTime)
-	return m
-}
-
-func getUser(session *mgo.Session, db string) mongo.GetUserFunc {
-	return func(username, password string) (string, []string, error) {
-		return "1", nil, nil
-	}
-
-}
-
-func getClient(session *mgo.Session, db string) mongo.GetClientFunc {
-	return func(clientID string) (clover.Client, error) {
-		var c clover.DefaultClient
-		if err := session.DB(db).C("oauth_client").FindId(clientID).One(&c); err != nil {
-			return nil, err
-		}
-
-		return &c, nil
-	}
-}
-
 func isLogin(c *ace.C) {
-	if c.Session.IsNew() {
+	session := c.Sessions("clover")
+	if session.IsNew {
 		c.Redirect("/signin?next=" + url.QueryEscape(c.Request.RequestURI))
 		c.Abort()
 		return
@@ -43,28 +20,50 @@ func isLogin(c *ace.C) {
 	c.Next()
 }
 
-func main() {
-	session, err := mgo.Dial("172.17.8.101:27017")
-	if err != nil {
-		panic(err)
+func initData(store *memory.Store) {
+	client := &tests.TestClient{
+		ClientID:     "001",
+		ClientSecret: "abc",
+		GrantType:    []string{clover.AUTHORIZATION_CODE, clover.IMPLICIT, clover.CLIENT_CREDENTIALS, clover.PASSWORD, clover.REFRESH_TOKEN},
+		Scope:        []string{"read", "write"},
+		RedirectURI:  "http://localhost:4000/callback",
+		Data: map[string]interface{}{
+			"company_name": "xyz",
+			"email":        "test@test.com",
+		},
 	}
 
-	store := setupStore(session)
-	authConfig := clover.NewAuthConfig(store)
-	authConfig.AllowImplicit = true
-	authConfig.AddClientGrant()
-	authConfig.AddPasswordGrant(store)
-	authConfig.AddRefreshGrant(store)
-	authConfig.AddAuthCodeGrant(store)
-	authConfig.SetDefaultScopes("read_my_timeline", "read_my_friend")
-	auth := clover.NewAuthServer(authConfig)
+	user := &tests.TestUser{
+		ID:       "111",
+		Username: "test",
+		Password: "1234",
+		Data: map[string]interface{}{
+			"email": "test@test.com",
+		},
+	}
 
-	resourceconfig := clover.NewResourceConfig(store)
-	resource := clover.NewResourceServer(resourceconfig)
+	store.SetClient(client)
+	store.SetUser(user)
+}
+
+func main() {
+	store := memory.New()
+	initData(store)
+
+	authServer := clover.NewAuthServer(store, clover.DefaultAuthServerConfig())
+	authServer.AddGrantType(clover.NewClientCredential(store))
+	authServer.AddGrantType(clover.NewPassword(store))
+	authServer.AddGrantType(clover.NewAuthorizationCode(store))
+	authServer.AddGrantType(clover.NewRefreshToken(store))
+	authServer.AddRespType(clover.NewCodeRespType(store, 500))
+	authServer.AddRespType(clover.NewImplicitRespType(store, store, 3600, 5000))
+	authServer.SetAccessTokenRespType(clover.NewAccessTokenRespType(store, store, 3600, 5000))
+
+	resourceServer := clover.NewResourceServer(store, clover.DefaultResourceConfig())
 
 	app := &App{
-		auth:     auth,
-		resource: resource,
+		authServer:     authServer,
+		resourceServer: resourceServer,
 	}
 
 	a := ace.New()
@@ -73,8 +72,7 @@ func main() {
 		Directory: "views",
 	}))
 
-	cookie := sessions.NewCookieStore([]byte("secret"))
-	a.Session("clover", cookie, nil)
+	a.Use(ace.Session(cookie.NewCookieStore(), nil))
 
 	//http://localhost:4000/oauth?client_id=1001&response_type=code
 	a.GET("/oauth", isLogin, app.grantScreen)

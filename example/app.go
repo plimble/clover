@@ -6,26 +6,26 @@ import (
 )
 
 type App struct {
-	auth     *clover.AuthServer
-	resource *clover.ResourceServer
+	authServer     *clover.AuthServer
+	resourceServer *clover.ResourceServer
 }
 
 func (a *App) grantScreen(c *ace.C) {
-	client, scopes, resp := a.auth.ValidateAuthorize(c.Writer, c.Request)
-	if resp.IsError() {
+	ad, resp := a.authServer.ValidateAuthorize(c.Writer, c.Request)
+	if resp != nil {
 		resp.Write(c.Writer)
 		return
 	}
 
 	c.HTML("authorize.html", map[string]interface{}{
-		"client": client,
-		"scopes": scopes,
+		"client": ad.Client,
+		"scopes": ad.Scope,
 	})
 }
 
 func (a *App) grant(c *ace.C) {
 	approve := c.MustPostString("approve", "")
-	resp := a.auth.Authorize(c.Writer, c.Request, approve == "approve")
+	resp := a.authServer.Authorize(c.Writer, c.Request, approve == "approve")
 	resp.Write(c.Writer)
 }
 
@@ -36,14 +36,16 @@ func (a *App) signinScreen(c *ace.C) {
 func (a *App) signin(c *ace.C) {
 	username := c.MustPostString("username", "")
 	password := c.MustPostString("password", "")
-	c.Session.Set("username", username)
-	c.Session.Set("password", password)
+
+	session := c.Sessions("clover")
+	session.Set("username", username)
+	session.Set("password", password)
 
 	c.Redirect(c.MustQueryString("next", ""))
 }
 
 func (a *App) token(c *ace.C) {
-	resp := a.auth.Token(c.Writer, c.Request)
+	resp := a.authServer.Token(c.Writer, c.Request)
 	resp.Write(c.Writer)
 }
 
@@ -56,8 +58,8 @@ func (a *App) callback(c *ace.C) {
 }
 
 func (a *App) home(c *ace.C) {
-	_, resp := a.resource.VerifyAccessToken(c.Writer, c.Request, "read_my_timeline")
-	if resp.IsError() {
+	_, resp := a.resourceServer.VerifyAccessToken(c.Writer, c.Request, "read_my_timeline")
+	if resp != nil {
 		resp.Write(c.Writer)
 		return
 	}

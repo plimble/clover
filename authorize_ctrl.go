@@ -118,13 +118,28 @@ func (a *authorizeCtrl) validateRespType(client Client, ar *authorizeRequest, au
 func (a *authorizeCtrl) validateScope(client Client, ar *authorizeRequest) ([]string, *Response) {
 	scopes := strings.Fields(ar.scope)
 
-	if len(scopes) == 0 {
-		return a.config.DefaultScopes, nil
+	if len(scopes) > 0 {
+		if len(client.GetScope()) > 0 {
+			if !checkScope(client.GetScope(), scopes...) {
+				return nil, errUnSupportedScope
+			}
+			return scopes, nil
+		} else {
+			return nil, errUnSupportedScope
+		}
 	}
 
-	if len(client.GetScope()) == 0 || !checkScope(client.GetScope(), scopes...) {
-		return nil, errUnSupportedScope
+	if len(client.GetScope()) > 0 {
+		return client.GetScope(), nil
 	}
 
-	return scopes, nil
+	// if len(scopes) == 0 {
+	// 	return a.config.DefaultScopes, nil
+	// }
+
+	// if len(client.GetScope()) == 0 || !checkScope(client.GetScope(), scopes...) {
+	// 	return nil, errUnSupportedScope
+	// }
+
+	return a.config.DefaultScopes, nil
 }

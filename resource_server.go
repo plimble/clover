@@ -64,7 +64,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(errInsufficientScope, scopes, w)
 	}
 
-	return at, s.setHeader(newRespData(nil), scopes, w)
+	return at, nil
 }
 
 func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.ResponseWriter) *Response {
