@@ -230,6 +230,6 @@ func (t *CodeSuite) TestVerifyAccessToken() {
 
 	w = httptest.NewRecorder()
 	at, resp := t.resourceServer.VerifyAccessToken(w, r, "read")
-	t.False(resp.IsError())
+	t.Nil(resp)
 	t.Equal(token.AccessToken, at.AccessToken)
 }

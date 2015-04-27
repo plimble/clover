@@ -121,6 +121,10 @@ func (t *tokenCtrl) validateScope(tr *TokenRequest, grantData *GrantData, client
 	} else if len(client.GetScope()) > 0 {
 		scopes = client.GetScope()
 	} else {
+		if len(t.config.DefaultScopes) == 0 {
+			return nil, errUnSupportedScope
+		}
+
 		scopes = t.config.DefaultScopes
 	}
 

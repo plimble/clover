@@ -168,7 +168,7 @@ func (t *ResourceServerSuite) TestVerifyAccessToken_Scope() {
 
 	at, resp := t.resource.VerifyAccessToken(w, r, "1", "2")
 
-	t.False(resp.IsError())
+	t.Nil(resp)
 	t.Equal(expat, at)
 }
 

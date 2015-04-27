@@ -133,15 +133,15 @@ func (t *TokenCtrlSuite) TestValidateScope() {
 		{&TokenRequest{Scope: "1 2"}, &GrantData{Scope: nil}, &TestClient{Scope: []string{"1"}}, nil, errInvalidScopeRequest},
 		//scope > 0 grant scope > 0 and in scope
 		{&TokenRequest{Scope: "1 2"}, &GrantData{Scope: []string{"1", "2"}}, &TestClient{Scope: nil}, []string{"1", "2"}, nil},
-		// //scope > 0 grant scope = 0 clinet > 0 and in scope
+		//scope > 0 grant scope = 0 clinet > 0 and in scope
 		{&TokenRequest{Scope: "1 2"}, &GrantData{Scope: []string{}}, &TestClient{Scope: []string{"1", "2"}}, []string{"1", "2"}, nil},
-		// //scope > 0 grant scope == 0
+		//scope > 0 grant scope == 0
 		{&TokenRequest{Scope: "1 2"}, &GrantData{Scope: nil}, &TestClient{Scope: nil}, nil, errUnSupportedScope},
-		// //scope == 0 grant scope > 0
+		//scope == 0 grant scope > 0
 		{&TokenRequest{}, &GrantData{Scope: []string{"1", "2"}}, &TestClient{Scope: nil}, []string{"1", "2"}, nil},
-		// //scope == 0 grant scope = 0 client = 0
+		//scope == 0 grant scope = 0 client = 0
 		{&TokenRequest{}, &GrantData{Scope: nil}, &TestClient{Scope: []string{"1", "2"}}, []string{"1", "2"}, nil},
-		// //scope == 0 grant scope == 0 get defualt scope
+		//scope == 0 grant scope == 0 get defualt scope
 		{&TokenRequest{}, &GrantData{}, &TestClient{}, []string{"3", "4"}, nil},
 	}
 
@@ -150,6 +150,18 @@ func (t *TokenCtrlSuite) TestValidateScope() {
 		t.Equal(testCase.resp, resp)
 		t.Equal(testCase.scope, scope)
 	}
+}
+
+func (t *TokenCtrlSuite) TestValidateScopeNoAllScope() {
+	t.ctrl.config.DefaultScopes = []string{}
+
+	tr := &TokenRequest{}
+	grantData := &GrantData{}
+	client := &TestClient{}
+
+	scope, resp := t.ctrl.validateScope(tr, grantData, client)
+	t.Nil(scope)
+	t.Equal(errUnSupportedScope, resp)
 }
 
 func (t *TokenCtrlSuite) TestToken() {
