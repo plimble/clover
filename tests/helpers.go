@@ -39,3 +39,8 @@ func getQuery(urlStr, key string) string {
 func auth(clientID, clientSecret string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(clientID+":"+clientSecret))
 }
+
+func getFragment(urlStr string) string {
+	aURL, _ := url.Parse(urlStr)
+	return aURL.Fragment
+}
