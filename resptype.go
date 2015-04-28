@@ -5,7 +5,7 @@ package clover
 
 type AuthorizeRespType interface {
 	Name() string
-	Response(ad *AuthorizeData) *Response
+	Response(ad *AuthorizeData, userID string) *Response
 	SupportGrant() string
 	IsImplicit() bool
 }

@@ -21,7 +21,7 @@ func newAuthorizeCtrl(store ClientStore, config *AuthServerConfig) *authorizeCtr
 	return &authorizeCtrl{store, config}
 }
 
-func (a *authorizeCtrl) authorize(ar *authorizeRequest, authRespTypes map[string]AuthorizeRespType, isAuthorized bool) *Response {
+func (a *authorizeCtrl) authorize(ar *authorizeRequest, authRespTypes map[string]AuthorizeRespType, isAuthorized bool, userID string) *Response {
 	// the user declined access to the client's application
 	if !isAuthorized {
 		return errUserDeniedAccess.setRedirect(ar.redirectURI, false, ar.state)
@@ -33,7 +33,7 @@ func (a *authorizeCtrl) authorize(ar *authorizeRequest, authRespTypes map[string
 		return resp
 	}
 
-	return ad.respType.Response(ad)
+	return ad.respType.Response(ad, userID)
 }
 
 func (a *authorizeCtrl) validate(ar *authorizeRequest, authRespTypes map[string]AuthorizeRespType) (*AuthorizeData, *Response) {

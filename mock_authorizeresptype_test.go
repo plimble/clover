@@ -17,8 +17,8 @@ func (m *MockAuthorizeRespType) Name() string {
 
 	return r0
 }
-func (m *MockAuthorizeRespType) Response(ad *AuthorizeData) *Response {
-	ret := m.Called(ad)
+func (m *MockAuthorizeRespType) Response(ad *AuthorizeData, userID string) *Response {
+	ret := m.Called(ad, userID)
 
 	var r0 *Response
 	if ret.Get(0) != nil {

@@ -71,7 +71,7 @@ func (t *ImplicitSuite) TestRequestAccessToken_Default() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
@@ -89,7 +89,7 @@ func (t *ImplicitSuite) TestRequestAccessToken_CustomScope() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
@@ -109,7 +109,7 @@ func (t *ImplicitSuite) TestRequestAccessToken_RequiredState() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")

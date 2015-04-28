@@ -14,8 +14,8 @@ func NewCodeRespType(authcodeStore AuthCodeStore, authcodeLifeTime int) Authoriz
 	return &codeRespType{authcodeStore, authcodeLifeTime, unik.NewUUID1Base64()}
 }
 
-func (rt *codeRespType) Response(ad *AuthorizeData) *Response {
-	ac, resp := rt.createAuthCode(ad)
+func (rt *codeRespType) Response(ad *AuthorizeData, userID string) *Response {
+	ac, resp := rt.createAuthCode(ad, userID)
 	if resp != nil {
 		return resp
 	}
@@ -37,11 +37,11 @@ func (rt *codeRespType) IsImplicit() bool {
 	return false
 }
 
-func (rt *codeRespType) createAuthCode(ad *AuthorizeData) (*AuthorizeCode, *Response) {
+func (rt *codeRespType) createAuthCode(ad *AuthorizeData, userID string) (*AuthorizeCode, *Response) {
 	ac := &AuthorizeCode{
 		Code:        rt.generateAuthCode(),
 		ClientID:    ad.Client.GetClientID(),
-		UserID:      ad.Client.GetUserID(),
+		UserID:      userID,
 		Expires:     addSecondUnix(rt.authcodeLifeTime),
 		Scope:       ad.Scope,
 		RedirectURI: ad.RedirectURI,

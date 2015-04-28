@@ -77,10 +77,10 @@ func (a *AuthServer) SetAccessTokenRespType(accessTokenRespType AccessTokenRespT
 	a.tokenRespType = accessTokenRespType
 }
 
-func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool) *Response {
+func (a *AuthServer) Authorize(w http.ResponseWriter, r *http.Request, isAuthorized bool, userID string) *Response {
 	ar := parseAuthRequest(r)
 
-	return a.authorizeCtrl.authorize(ar, a.authRespTypes, isAuthorized)
+	return a.authorizeCtrl.authorize(ar, a.authRespTypes, isAuthorized, userID)
 }
 
 func (a *AuthServer) ValidateAuthorize(w http.ResponseWriter, r *http.Request) (*AuthorizeData, *Response) {

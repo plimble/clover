@@ -16,8 +16,8 @@ func NewImplicitRespType(accessTokenstore AccessTokenStore, refreshTokenStore Re
 	}
 }
 
-func (rt *authTokenRespType) Response(ad *AuthorizeData) *Response {
-	at, resp := rt.base.createAccessToken(ad.Client.GetClientID(), ad.Client.GetUserID(), ad.Scope, ad.Client.GetData(), rt.unik.Generate())
+func (rt *authTokenRespType) Response(ad *AuthorizeData, userID string) *Response {
+	at, resp := rt.base.createAccessToken(ad.Client.GetClientID(), userID, ad.Scope, ad.Client.GetData(), rt.unik.Generate())
 	if resp != nil {
 		return resp
 	}

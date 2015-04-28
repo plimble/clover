@@ -83,7 +83,7 @@ func (t *CodeSuite) TestRequestAccessToken_Default() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
@@ -120,7 +120,7 @@ func (t *CodeSuite) TestRequestAccessToken_CustomScope() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
@@ -156,7 +156,7 @@ func (t *CodeSuite) TestRequestAccessToken_RequiredState() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
@@ -191,7 +191,7 @@ func (t *CodeSuite) TestVerifyAccessToken() {
 
 	w := httptest.NewRecorder()
 
-	resp := t.authServer.Authorize(w, r, true)
+	resp := t.authServer.Authorize(w, r, true, "userid")
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")

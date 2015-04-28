@@ -95,6 +95,7 @@ func (t *AuthorizeCtrlSuite) TestValidateRedirectURI() {
 func (t *AuthorizeCtrlSuite) TestValidateRespType() {
 	mockResp := NewMockAuthorizeRespType()
 	authRespTypes := map[string]AuthorizeRespType{IMPLICIT: mockResp}
+
 	ar := &authorizeRequest{responseType: IMPLICIT}
 	client := genTestClient()
 	client.GrantType = []string{IMPLICIT}
@@ -249,10 +250,10 @@ func (t *AuthorizeCtrlSuite) TestHandleAuthorize() {
 	client.Scope = []string{"1"}
 
 	mockResp.On("SupportGrant").Return(AUTHORIZATION_CODE)
-	mockResp.On("Response", mock.Anything).Return(newRespData(nil).setRedirect("", false, ""))
+	mockResp.On("Response", mock.Anything, "userid").Return(newRespData(nil).setRedirect("", false, ""))
 	t.store.On("GetClient", ar.clientID).Return(client, nil)
 
-	resp := t.ctrl.authorize(ar, authRespTypes, true)
+	resp := t.ctrl.authorize(ar, authRespTypes, true, "userid")
 	t.store.AssertExpectations(t.T())
 	mockResp.AssertExpectations(t.T())
 	t.False(resp.IsError())
@@ -268,7 +269,7 @@ func (t *AuthorizeCtrlSuite) TestHandleAuthorize_WithUserDeclined() {
 		state:        "123",
 	}
 
-	resp := t.ctrl.authorize(ar, authRespTypes, false)
+	resp := t.ctrl.authorize(ar, authRespTypes, false, "userid")
 	expResp := errUserDeniedAccess.setRedirect("http://localhost", false, "123")
 	t.Equal(expResp, resp)
 }
