@@ -13,15 +13,13 @@ type AeroStore struct {
 	client           *aero.Client
 	ns               string
 	key              *PublicKey
-	getUserFunc      GetUserFunc
-	getClientFunc    GetClientFunc
 	tokenLifeTime    int
 	authCodeLifetime int
 	refresLifeTime   int
 }
 
 func New(asClient *aero.Client, ns string, tokenLifeTime, authCodeLifetime, refresLifeTime int) *AeroStore {
-	return &AeroStore{asClient, ns, nil, nil, nil, tokenLifeTime, authCodeLifetime, refresLifeTime}
+	return &AeroStore{asClient, ns, nil, tokenLifeTime, authCodeLifetime, refresLifeTime}
 }
 
 func (s *AeroStore) SetAccessToken(accessToken *AccessToken) error {

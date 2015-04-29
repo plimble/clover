@@ -53,7 +53,7 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 	}
 
 	if len(scopes) == 0 {
-		return at, s.setHeader(newRespData(nil), nil, w)
+		return at, nil
 	}
 
 	if len(scopes) > 0 && len(at.Scope) == 0 {
