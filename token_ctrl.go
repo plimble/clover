@@ -114,7 +114,7 @@ func (t *tokenCtrl) validateScope(tr *TokenRequest, grantData *GrantData, client
 				return nil, errInvalidScopeRequest
 			}
 		} else {
-			return nil, errUnSupportedScope
+			return scopes, nil
 		}
 	} else if len(grantData.Scope) > 0 {
 		scopes = grantData.Scope
