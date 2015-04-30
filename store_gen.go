@@ -9,160 +9,6 @@ import (
 )
 
 // DecodeMsg implements msgp.Decodable
-func (z *PublicKey) DecodeMsg(dc *msgp.Reader) (err error) {
-	var field []byte
-	_ = field
-	var isz uint32
-	isz, err = dc.ReadMapHeader()
-	if err != nil {
-		return
-	}
-	for isz > 0 {
-		isz--
-		field, err = dc.ReadMapKeyPtr()
-		if err != nil {
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "c":
-			z.ClientID, err = dc.ReadString()
-			if err != nil {
-				return
-			}
-		case "pu":
-			z.PublicKey, err = dc.ReadString()
-			if err != nil {
-				return
-			}
-		case "pr":
-			z.PrivateKey, err = dc.ReadString()
-			if err != nil {
-				return
-			}
-		case "a":
-			z.Algorithm, err = dc.ReadString()
-			if err != nil {
-				return
-			}
-		default:
-			err = dc.Skip()
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z *PublicKey) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteMapHeader(4)
-	if err != nil {
-		return
-	}
-	err = en.WriteString("c")
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.ClientID)
-	if err != nil {
-		return
-	}
-	err = en.WriteString("pu")
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.PublicKey)
-	if err != nil {
-		return
-	}
-	err = en.WriteString("pr")
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.PrivateKey)
-	if err != nil {
-		return
-	}
-	err = en.WriteString("a")
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Algorithm)
-	if err != nil {
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z *PublicKey) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendMapHeader(o, 4)
-	o = msgp.AppendString(o, "c")
-	o = msgp.AppendString(o, z.ClientID)
-	o = msgp.AppendString(o, "pu")
-	o = msgp.AppendString(o, z.PublicKey)
-	o = msgp.AppendString(o, "pr")
-	o = msgp.AppendString(o, z.PrivateKey)
-	o = msgp.AppendString(o, "a")
-	o = msgp.AppendString(o, z.Algorithm)
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *PublicKey) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var field []byte
-	_ = field
-	var isz uint32
-	isz, bts, err = msgp.ReadMapHeaderBytes(bts)
-	if err != nil {
-		return
-	}
-	for isz > 0 {
-		isz--
-		field, bts, err = msgp.ReadMapKeyZC(bts)
-		if err != nil {
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "c":
-			z.ClientID, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				return
-			}
-		case "pu":
-			z.PublicKey, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				return
-			}
-		case "pr":
-			z.PrivateKey, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				return
-			}
-		case "a":
-			z.Algorithm, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				return
-			}
-		default:
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				return
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-func (z *PublicKey) Msgsize() (s int) {
-	s = msgp.MapHeaderSize + msgp.StringPrefixSize + 1 + msgp.StringPrefixSize + len(z.ClientID) + msgp.StringPrefixSize + 2 + msgp.StringPrefixSize + len(z.PublicKey) + msgp.StringPrefixSize + 2 + msgp.StringPrefixSize + len(z.PrivateKey) + msgp.StringPrefixSize + 1 + msgp.StringPrefixSize + len(z.Algorithm)
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
 func (z *RefreshToken) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -1073,5 +919,159 @@ func (z *AccessToken) Msgsize() (s int) {
 			s += msgp.StringPrefixSize + len(cua) + msgp.GuessSize(xhx)
 		}
 	}
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *PublicKey) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var isz uint32
+	isz, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for isz > 0 {
+		isz--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "c":
+			z.ClientID, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "pu":
+			z.PublicKey, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "pr":
+			z.PrivateKey, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "a":
+			z.Algorithm, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *PublicKey) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteMapHeader(4)
+	if err != nil {
+		return
+	}
+	err = en.WriteString("c")
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ClientID)
+	if err != nil {
+		return
+	}
+	err = en.WriteString("pu")
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.PublicKey)
+	if err != nil {
+		return
+	}
+	err = en.WriteString("pr")
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.PrivateKey)
+	if err != nil {
+		return
+	}
+	err = en.WriteString("a")
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.Algorithm)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *PublicKey) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendMapHeader(o, 4)
+	o = msgp.AppendString(o, "c")
+	o = msgp.AppendString(o, z.ClientID)
+	o = msgp.AppendString(o, "pu")
+	o = msgp.AppendString(o, z.PublicKey)
+	o = msgp.AppendString(o, "pr")
+	o = msgp.AppendString(o, z.PrivateKey)
+	o = msgp.AppendString(o, "a")
+	o = msgp.AppendString(o, z.Algorithm)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *PublicKey) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var isz uint32
+	isz, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for isz > 0 {
+		isz--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "c":
+			z.ClientID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "pu":
+			z.PublicKey, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "pr":
+			z.PrivateKey, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "a":
+			z.Algorithm, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+func (z *PublicKey) Msgsize() (s int) {
+	s = msgp.MapHeaderSize + msgp.StringPrefixSize + 1 + msgp.StringPrefixSize + len(z.ClientID) + msgp.StringPrefixSize + 2 + msgp.StringPrefixSize + len(z.PublicKey) + msgp.StringPrefixSize + 2 + msgp.StringPrefixSize + len(z.PrivateKey) + msgp.StringPrefixSize + 1 + msgp.StringPrefixSize + len(z.Algorithm)
 	return
 }

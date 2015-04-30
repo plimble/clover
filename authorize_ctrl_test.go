@@ -20,7 +20,7 @@ func TestAuthorizeCtrlSuite(t *testing.T) {
 func (t *AuthorizeCtrlSuite) SetupTest() {
 	config := &AuthServerConfig{}
 	t.store = NewMockallstore()
-	t.ctrl = newAuthorizeCtrl(t.store, config)
+	t.ctrl = newAuthorizeCtrl(t.store, t.store, config)
 }
 
 func (t *AuthorizeCtrlSuite) TestValidateClientID() {
@@ -133,26 +133,88 @@ func (t *AuthorizeCtrlSuite) TestValidateRespType_WithUnsupportGrant() {
 	mockResp.AssertExpectations(t.T())
 }
 
-func (t *AuthorizeCtrlSuite) TestValidateScope() {
-	t.ctrl.config.DefaultScopes = []string{"a", "b", "c"}
-
-	testCases := []struct {
-		ar     *authorizeRequest
-		client Client
-		resp   *Response
-		scope  []string
-	}{
-		{&authorizeRequest{scope: ""}, &TestClient{Scope: []string{}}, nil, t.ctrl.config.DefaultScopes},
-		{&authorizeRequest{scope: "1"}, &TestClient{Scope: []string{}}, errUnSupportedScope, nil},
-		{&authorizeRequest{scope: "a 1"}, &TestClient{Scope: []string{"a 2"}}, errUnSupportedScope, nil},
-		{&authorizeRequest{scope: "1 2"}, &TestClient{Scope: []string{"1", "2"}}, nil, []string{"1", "2"}},
+func (t *AuthorizeCtrlSuite) TestValidateScope_ClientScope() {
+	client := &TestClient{
+		Scope: []string{"1", "2"},
 	}
 
-	for _, testCase := range testCases {
-		scope, resp := t.ctrl.validateScope(testCase.client, testCase.ar)
-		t.Equal(testCase.resp, resp)
-		t.Equal(testCase.scope, scope)
+	ar := &authorizeRequest{
+		scope: "1",
 	}
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.Nil(resp)
+	t.Equal([]string{"1"}, scope)
+}
+
+func (t *AuthorizeCtrlSuite) TestValidateScope_ClientScope_NotMatch() {
+	client := &TestClient{
+		Scope: []string{"3", "2"},
+	}
+
+	ar := &authorizeRequest{
+		scope: "1",
+	}
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.Equal(errUnSupportedScope, resp)
+	t.Nil(scope)
+}
+
+func (t *AuthorizeCtrlSuite) TestValidateScope_ExistScope() {
+	client := &TestClient{}
+
+	ar := &authorizeRequest{
+		scope: "1",
+	}
+
+	t.store.On("ExistScopes", []string{"1"}).Return(true, nil)
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.store.AssertExpectations(t.T())
+	t.Nil(resp)
+	t.Equal([]string{"1"}, scope)
+}
+
+func (t *AuthorizeCtrlSuite) TestValidateScope_NotExistScope() {
+	client := &TestClient{}
+
+	ar := &authorizeRequest{
+		scope: "1",
+	}
+
+	t.store.On("ExistScopes", []string{"1"}).Return(false, nil)
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.store.AssertExpectations(t.T())
+	t.Equal(errUnSupportedScope, resp)
+	t.Nil(scope)
+}
+
+func (t *AuthorizeCtrlSuite) TestValidateScope_DefaultScope() {
+	defaultScope := []string{"a", "b", "c"}
+	client := &TestClient{}
+	ar := &authorizeRequest{}
+
+	t.store.On("GetDefaultScope", client.GetClientID()).Return(defaultScope, nil)
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.store.AssertExpectations(t.T())
+	t.Nil(resp)
+	t.Equal(defaultScope, scope)
+}
+
+func (t *AuthorizeCtrlSuite) TestValidateScope_DefaultScopeNotExist() {
+	defaultScope := []string{}
+	client := &TestClient{}
+	ar := &authorizeRequest{}
+
+	t.store.On("GetDefaultScope", client.GetClientID()).Return(defaultScope, nil)
+
+	scope, resp := t.ctrl.validateScope(client, ar)
+	t.store.AssertExpectations(t.T())
+	t.Equal(errNoScope, resp)
+	t.Nil(scope)
 }
 
 func (t *AuthorizeCtrlSuite) TestValidate() {
@@ -168,6 +230,7 @@ func (t *AuthorizeCtrlSuite) TestValidate() {
 	client.GrantType = []string{AUTHORIZATION_CODE}
 
 	mockResp.On("SupportGrant").Return(AUTHORIZATION_CODE)
+	t.store.On("GetDefaultScope", client.GetClientID()).Return([]string{"1"}, nil)
 	t.store.On("GetClient", ar.clientID).Return(client, nil)
 
 	ad, resp := t.ctrl.validate(ar, authRespTypes)

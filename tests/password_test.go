@@ -30,7 +30,7 @@ func (t *PasswordSuite) SetupSuite() {
 	t.authConfig = &AuthServerConfig{}
 	t.resourceConfig = DefaultResourceConfig()
 
-	t.authServer = NewAuthServer(t.store, t.authConfig)
+	t.authServer = NewAuthServer(t.store, t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
 
 	t.authServer.AddGrantType(NewPassword(t.store))
@@ -79,6 +79,7 @@ func (t *PasswordSuite) defaultReqToken() *http.Request {
 }
 
 func (t *PasswordSuite) TestRequestAccessToken_Default() {
+	t.store.SetDefaultScope("read", "write")
 	//reuest access token
 	r := t.defaultReqToken()
 

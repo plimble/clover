@@ -104,3 +104,22 @@ func (m *Mockallstore) GetKey(clientID string) (*PublicKey, error) {
 
 	return r0, r1
 }
+func (m *Mockallstore) ExistScopes(scopes ...string) (bool, error) {
+	ret := m.Called(scopes)
+
+	r0 := ret.Get(0).(bool)
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
+func (m *Mockallstore) GetDefaultScope(clientID string) ([]string, error) {
+	ret := m.Called(clientID)
+
+	var r0 []string
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]string)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}

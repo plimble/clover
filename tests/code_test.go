@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	. "github.com/plimble/clover"
 	"github.com/plimble/clover/store/memory"
 	"github.com/stretchr/testify/suite"
@@ -29,7 +30,7 @@ func (t *CodeSuite) SetupSuite() {
 	t.authConfig = &AuthServerConfig{}
 	t.resourceConfig = DefaultResourceConfig()
 
-	t.authServer = NewAuthServer(t.store, t.authConfig)
+	t.authServer = NewAuthServer(t.store, t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
 
 	t.authServer.AddGrantType(NewAuthorizationCode(t.store))
@@ -78,6 +79,7 @@ func (t *CodeSuite) defaultReqToken(code string) *http.Request {
 }
 
 func (t *CodeSuite) TestRequestAccessToken_Default() {
+	t.store.SetDefaultScope("read", "write")
 	//request authroize code
 	r := t.defaultReqAuthorize()
 
@@ -87,6 +89,8 @@ func (t *CodeSuite) TestRequestAccessToken_Default() {
 	resp.Write(w)
 
 	location := w.Header().Get("LOCATION")
+
+	fmt.Println(w)
 
 	t.Equal(302, w.Code)
 	t.Equal(t.client.RedirectURI, getURL(location))

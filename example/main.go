@@ -50,7 +50,7 @@ func main() {
 	store := memory.New()
 	initData(store)
 
-	authServer := clover.NewAuthServer(store, clover.DefaultAuthServerConfig())
+	authServer := clover.NewAuthServer(store, store, clover.DefaultAuthServerConfig())
 	authServer.AddGrantType(clover.NewClientCredential(store))
 	authServer.AddGrantType(clover.NewPassword(store))
 	authServer.AddGrantType(clover.NewAuthorizationCode(store))

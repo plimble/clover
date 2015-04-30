@@ -8,7 +8,6 @@ import (
 
 type AuthServerConfig struct {
 	StateParamRequired   bool
-	DefaultScopes        []string
 	AllowCredentialsBody bool
 }
 
@@ -42,7 +41,8 @@ type TokenRequest struct {
 
 type AuthServer struct {
 	config        *AuthServerConfig
-	store         ClientStore
+	clientStore   ClientStore
+	scopeStore    ScopeStore
 	authRespTypes map[string]AuthorizeRespType
 	tokenRespType AccessTokenRespType
 	grants        map[string]GrantType
@@ -50,17 +50,18 @@ type AuthServer struct {
 	tokenCtrl     *tokenCtrl
 }
 
-func NewAuthServer(store ClientStore, config *AuthServerConfig) *AuthServer {
+func NewAuthServer(clientStore ClientStore, scopeStore ScopeStore, config *AuthServerConfig) *AuthServer {
 	a := &AuthServer{
 		config:        config,
-		store:         store,
+		clientStore:   clientStore,
+		scopeStore:    scopeStore,
 		authRespTypes: make(map[string]AuthorizeRespType),
 		// tokenRespType: ,
 		grants: make(map[string]GrantType),
 	}
 
-	a.authorizeCtrl = newAuthorizeCtrl(a.store, a.config)
-	a.tokenCtrl = newTokenCtrl(a.store, a.config)
+	a.authorizeCtrl = newAuthorizeCtrl(a.clientStore, a.scopeStore, a.config)
+	a.tokenCtrl = newTokenCtrl(a.clientStore, a.scopeStore, a.config)
 
 	return a
 }

@@ -10,10 +10,16 @@ type allstore interface {
 	RefreshTokenStore
 	AuthCodeStore
 	PublicKeyStore
+	ScopeStore
 }
 
 type ClientStore interface {
 	GetClient(id string) (Client, error)
+}
+
+type ScopeStore interface {
+	ExistScopes(scopes ...string) (bool, error)
+	GetDefaultScope(clientID string) ([]string, error)
 }
 
 type UserStore interface {

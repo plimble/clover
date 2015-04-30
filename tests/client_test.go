@@ -29,7 +29,7 @@ func (t *ClientSuite) SetupSuite() {
 	t.authConfig = &AuthServerConfig{}
 	t.resourceConfig = DefaultResourceConfig()
 
-	t.authServer = NewAuthServer(t.store, t.authConfig)
+	t.authServer = NewAuthServer(t.store, t.store, t.authConfig)
 	t.resourceServer = NewResourceServer(t.store, t.resourceConfig)
 
 	t.authServer.AddGrantType(NewClientCredential(t.store))

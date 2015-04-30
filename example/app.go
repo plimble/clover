@@ -24,8 +24,10 @@ func (a *App) grantScreen(c *ace.C) {
 }
 
 func (a *App) grant(c *ace.C) {
+	session := c.Sessions("clover")
+	username := session.GetString("username", "")
 	approve := c.MustPostString("approve", "")
-	resp := a.authServer.Authorize(c.Writer, c.Request, approve == "approve")
+	resp := a.authServer.Authorize(c.Writer, c.Request, approve == "approve", username)
 	resp.Write(c.Writer)
 }
 

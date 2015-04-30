@@ -2,7 +2,7 @@ package memory
 
 import (
 	"errors"
-	"github.com/plimble/clover"
+	. "github.com/plimble/clover"
 	"io/ioutil"
 )
 
@@ -11,43 +11,46 @@ var (
 )
 
 type Store struct {
-	User        map[string]clover.User
-	Client      map[string]clover.Client
-	Refresh     map[string]*clover.RefreshToken
-	AuthCode    map[string]*clover.AuthorizeCode
-	AccessToken map[string]*clover.AccessToken
-	PublicKey   map[string]*clover.PublicKey
-	cPublicKey  string
-	cPrivateKey string
-	cHmacKey    string
+	User         map[string]User
+	Client       map[string]Client
+	Refresh      map[string]*RefreshToken
+	AuthCode     map[string]*AuthorizeCode
+	AccessToken  map[string]*AccessToken
+	Scope        map[string]struct{}
+	defaultScope []string
+	PublicKey    map[string]*PublicKey
+	cPublicKey   string
+	cPrivateKey  string
+	cHmacKey     string
 }
 
 func New() *Store {
 	return &Store{
-		User:        make(map[string]clover.User),
-		Client:      make(map[string]clover.Client),
-		Refresh:     make(map[string]*clover.RefreshToken),
-		AuthCode:    make(map[string]*clover.AuthorizeCode),
-		AccessToken: make(map[string]*clover.AccessToken),
-		PublicKey:   make(map[string]*clover.PublicKey),
+		User:        make(map[string]User),
+		Client:      make(map[string]Client),
+		Refresh:     make(map[string]*RefreshToken),
+		AuthCode:    make(map[string]*AuthorizeCode),
+		AccessToken: make(map[string]*AccessToken),
+		PublicKey:   make(map[string]*PublicKey),
 	}
 }
 
 func (s *Store) Flush() {
-	s.User = make(map[string]clover.User)
-	s.Client = make(map[string]clover.Client)
-	s.Refresh = make(map[string]*clover.RefreshToken)
-	s.AuthCode = make(map[string]*clover.AuthorizeCode)
-	s.AccessToken = make(map[string]*clover.AccessToken)
-	s.PublicKey = make(map[string]*clover.PublicKey)
+	s.User = make(map[string]User)
+	s.Client = make(map[string]Client)
+	s.Refresh = make(map[string]*RefreshToken)
+	s.AuthCode = make(map[string]*AuthorizeCode)
+	s.AccessToken = make(map[string]*AccessToken)
+	s.PublicKey = make(map[string]*PublicKey)
+	s.Scope = make(map[string]struct{})
 }
 
-func (s *Store) SetClient(c clover.Client) error {
+func (s *Store) SetClient(c Client) error {
 	s.Client[c.GetClientID()] = c
 	return nil
 }
 
-func (s *Store) GetClient(id string) (clover.Client, error) {
+func (s *Store) GetClient(id string) (Client, error) {
 	client, ok := s.Client[id]
 	if !ok {
 		return nil, errNotFound
@@ -56,12 +59,12 @@ func (s *Store) GetClient(id string) (clover.Client, error) {
 	return client, nil
 }
 
-func (s *Store) SetAccessToken(accessToken *clover.AccessToken) error {
+func (s *Store) SetAccessToken(accessToken *AccessToken) error {
 	s.AccessToken[accessToken.AccessToken] = accessToken
 	return nil
 }
 
-func (s *Store) GetAccessToken(at string) (*clover.AccessToken, error) {
+func (s *Store) GetAccessToken(at string) (*AccessToken, error) {
 	accesstoken, ok := s.AccessToken[at]
 	if !ok {
 		return nil, errNotFound
@@ -70,12 +73,12 @@ func (s *Store) GetAccessToken(at string) (*clover.AccessToken, error) {
 	return accesstoken, nil
 }
 
-func (s *Store) SetRefreshToken(rt *clover.RefreshToken) error {
+func (s *Store) SetRefreshToken(rt *RefreshToken) error {
 	s.Refresh[rt.RefreshToken] = rt
 	return nil
 }
 
-func (s *Store) GetRefreshToken(rt string) (*clover.RefreshToken, error) {
+func (s *Store) GetRefreshToken(rt string) (*RefreshToken, error) {
 	refreshtoken, ok := s.Refresh[rt]
 	if !ok {
 		return nil, errNotFound
@@ -95,12 +98,12 @@ func (s *Store) RemoveRefreshToken(rt string) error {
 	return nil
 }
 
-func (s *Store) SetAuthorizeCode(ac *clover.AuthorizeCode) error {
+func (s *Store) SetAuthorizeCode(ac *AuthorizeCode) error {
 	s.AuthCode[ac.Code] = ac
 	return nil
 }
 
-func (s *Store) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
+func (s *Store) GetAuthorizeCode(code string) (*AuthorizeCode, error) {
 	authcode, ok := s.AuthCode[code]
 	if !ok {
 		return nil, errNotFound
@@ -109,12 +112,12 @@ func (s *Store) GetAuthorizeCode(code string) (*clover.AuthorizeCode, error) {
 	return authcode, nil
 }
 
-func (s *Store) SetUser(u clover.User) error {
+func (s *Store) SetUser(u User) error {
 	s.User[u.GetUsername()] = u
 	return nil
 }
 
-func (s *Store) GetUser(username, password string) (clover.User, error) {
+func (s *Store) GetUser(username, password string) (User, error) {
 	user, ok := s.User[username]
 	if !ok {
 		return nil, errNotFound
@@ -127,7 +130,7 @@ func (s *Store) GetUser(username, password string) (clover.User, error) {
 	return user, nil
 }
 
-func (s *Store) GetKey(clientID string) (*clover.PublicKey, error) {
+func (s *Store) GetKey(clientID string) (*PublicKey, error) {
 	pub, ok := s.PublicKey[clientID]
 	if !ok {
 		return nil, errNotFound
@@ -156,10 +159,10 @@ func (s *Store) AddRSKey(clientID string) {
 
 	c, _ := s.GetClient(clientID)
 	if c != nil {
-		s.PublicKey[clientID] = &clover.PublicKey{
+		s.PublicKey[clientID] = &PublicKey{
 			PublicKey:  s.cPublicKey,
 			PrivateKey: s.cPrivateKey,
-			Algorithm:  clover.JWT_ALGO_RS512,
+			Algorithm:  JWT_ALGO_RS512,
 		}
 	}
 }
@@ -171,10 +174,32 @@ func (s *Store) AddHSKey(clientID string) {
 
 	c, _ := s.GetClient(clientID)
 	if c != nil {
-		s.PublicKey[clientID] = &clover.PublicKey{
+		s.PublicKey[clientID] = &PublicKey{
 			PublicKey:  s.cHmacKey,
 			PrivateKey: s.cHmacKey,
-			Algorithm:  clover.JWT_ALGO_HS512,
+			Algorithm:  JWT_ALGO_HS512,
 		}
 	}
+}
+
+func (s *Store) SetScope(key string) {
+	s.Scope[key] = struct{}{}
+}
+
+func (s *Store) ExistScopes(scopes ...string) (bool, error) {
+	for i := 0; i < len(scopes); i++ {
+		if _, ok := s.Scope[scopes[i]]; !ok {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (s *Store) SetDefaultScope(scope ...string) {
+	s.defaultScope = scope
+}
+
+func (s *Store) GetDefaultScope(clientID string) ([]string, error) {
+	return s.defaultScope, nil
 }

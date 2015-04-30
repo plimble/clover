@@ -13,12 +13,13 @@ type AuthorizeData struct {
 }
 
 type authorizeCtrl struct {
-	store  ClientStore
-	config *AuthServerConfig
+	clientStore ClientStore
+	scopeStore  ScopeStore
+	config      *AuthServerConfig
 }
 
-func newAuthorizeCtrl(store ClientStore, config *AuthServerConfig) *authorizeCtrl {
-	return &authorizeCtrl{store, config}
+func newAuthorizeCtrl(clientStore ClientStore, scopeStore ScopeStore, config *AuthServerConfig) *authorizeCtrl {
+	return &authorizeCtrl{clientStore, scopeStore, config}
 }
 
 func (a *authorizeCtrl) authorize(ar *authorizeRequest, authRespTypes map[string]AuthorizeRespType, isAuthorized bool, userID string) *Response {
@@ -70,7 +71,7 @@ func (a *authorizeCtrl) validateClientID(ar *authorizeRequest) (Client, *Respons
 	}
 
 	//get client
-	client, err := a.store.GetClient(ar.clientID)
+	client, err := a.clientStore.GetClient(ar.clientID)
 	if err != nil {
 		return nil, errInvalidClientID
 	}
@@ -117,29 +118,30 @@ func (a *authorizeCtrl) validateRespType(client Client, ar *authorizeRequest, au
 
 func (a *authorizeCtrl) validateScope(client Client, ar *authorizeRequest) ([]string, *Response) {
 	scopes := strings.Fields(ar.scope)
-
 	if len(scopes) > 0 {
 		if len(client.GetScope()) > 0 {
 			if !checkScope(client.GetScope(), scopes...) {
 				return nil, errUnSupportedScope
 			}
-			return scopes, nil
 		} else {
-			return nil, errUnSupportedScope
+			ok, err := a.scopeStore.ExistScopes(scopes...)
+			if err != nil {
+				return nil, errInternal(err.Error())
+			}
+			if !ok {
+				return nil, errUnSupportedScope
+			}
+		}
+	} else {
+		var err error
+		scopes, err = a.scopeStore.GetDefaultScope(client.GetClientID())
+		if err != nil {
+			return nil, errInternal(err.Error())
+		}
+		if len(scopes) == 0 {
+			return nil, errNoScope
 		}
 	}
 
-	if len(client.GetScope()) > 0 {
-		return client.GetScope(), nil
-	}
-
-	// if len(scopes) == 0 {
-	// 	return a.config.DefaultScopes, nil
-	// }
-
-	// if len(client.GetScope()) == 0 || !checkScope(client.GetScope(), scopes...) {
-	// 	return nil, errUnSupportedScope
-	// }
-
-	return a.config.DefaultScopes, nil
+	return scopes, nil
 }

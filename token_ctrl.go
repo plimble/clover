@@ -15,12 +15,13 @@ type TokenData struct {
 }
 
 type tokenCtrl struct {
-	store  ClientStore
-	config *AuthServerConfig
+	clientStore ClientStore
+	scopeStore  ScopeStore
+	config      *AuthServerConfig
 }
 
-func newTokenCtrl(store ClientStore, config *AuthServerConfig) *tokenCtrl {
-	return &tokenCtrl{store, config}
+func newTokenCtrl(clientStore ClientStore, scopeStore ScopeStore, config *AuthServerConfig) *tokenCtrl {
+	return &tokenCtrl{clientStore, scopeStore, config}
 }
 
 func (t *tokenCtrl) token(tr *TokenRequest, respType AccessTokenRespType, grants map[string]GrantType) *Response {
@@ -90,7 +91,7 @@ func (t *tokenCtrl) validateGrantType(tr *TokenRequest, grants map[string]GrantT
 
 func (t *tokenCtrl) validateClient(tr *TokenRequest, grantData *GrantData) (Client, *Response) {
 	var err error
-	client, err := t.store.GetClient(tr.ClientID)
+	client, err := t.clientStore.GetClient(tr.ClientID)
 	if err != nil {
 		return nil, errInvalidClientID
 	}
@@ -109,23 +110,32 @@ func (t *tokenCtrl) validateScope(tr *TokenRequest, grantData *GrantData, client
 			if !checkScope(grantData.Scope, scopes...) {
 				return nil, errInvalidScopeRequest
 			}
-		} else if len(client.GetScope()) > 0 {
-			if !checkScope(client.GetScope(), scopes...) {
-				return nil, errInvalidScopeRequest
-			}
 		} else {
-			return nil, errUnSupportedScope
+			if len(client.GetScope()) > 0 {
+				if !checkScope(client.GetScope(), scopes...) {
+					return nil, errInvalidScopeRequest
+				}
+			} else {
+				ok, err := t.scopeStore.ExistScopes(scopes...)
+				if err != nil {
+					return nil, errInternal(err.Error())
+				}
+				if !ok {
+					return nil, errUnSupportedScope
+				}
+			}
 		}
 	} else if len(grantData.Scope) > 0 {
 		scopes = grantData.Scope
-	} else if len(client.GetScope()) > 0 {
-		scopes = client.GetScope()
 	} else {
-		if len(t.config.DefaultScopes) == 0 {
-			return nil, errUnSupportedScope
+		var err error
+		scopes, err = t.scopeStore.GetDefaultScope(client.GetClientID())
+		if err != nil {
+			return nil, errInternal(err.Error())
 		}
-
-		scopes = t.config.DefaultScopes
+		if len(scopes) == 0 {
+			return nil, errNoScope
+		}
 	}
 
 	return scopes, nil
