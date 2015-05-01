@@ -243,12 +243,12 @@ func (t *TokenCtrlSuite) TestToken() {
 	mockGrant.On("BeforeCreateAccessToken", tr, mock.Anything).Return(nil)
 	mockGrant.On("IncludeRefreshToken").Return(false)
 
-	mockRespType.On("Response", mock.Anything, mock.Anything).Return(newRespData(nil))
+	mockRespType.On("Response", mock.Anything, mock.Anything).Return(NewRespData(nil))
 
 	t.store.On("GetClient", tr.ClientID).Return(client, nil)
 
 	resp := t.ctrl.token(tr, mockRespType, grants)
-	t.Equal(newRespData(nil), resp)
+	t.Equal(NewRespData(nil), resp)
 	t.store.AssertExpectations(t.T())
 	mockRespType.AssertExpectations(t.T())
 	mockGrant.AssertExpectations(t.T())

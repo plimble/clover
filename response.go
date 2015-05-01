@@ -85,7 +85,7 @@ func (r *Response) redirect(w http.ResponseWriter) {
 	w.WriteHeader(302)
 }
 
-func newErrResp(code int, title, desc string) *Response {
+func NewErrResp(code int, title, desc string) *Response {
 	return &Response{
 		code:  code,
 		isErr: true,
@@ -96,7 +96,7 @@ func newErrResp(code int, title, desc string) *Response {
 	}
 }
 
-func newRespData(data map[string]interface{}) *Response {
+func NewRespData(data map[string]interface{}) *Response {
 	return &Response{
 		code:  200,
 		isErr: false,

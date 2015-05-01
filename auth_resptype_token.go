@@ -24,7 +24,7 @@ func (rt *authTokenRespType) Response(ad *AuthorizeData, userID string) *Respons
 
 	data := rt.base.createRespData(at.AccessToken, at.Scope, "", ad.State, at.Data)
 
-	return newRespData(data).setRedirect(ad.RedirectURI, ad.respType.IsImplicit(), ad.State)
+	return NewRespData(data).setRedirect(ad.RedirectURI, ad.respType.IsImplicit(), ad.State)
 }
 
 func (rt *authTokenRespType) Name() string {

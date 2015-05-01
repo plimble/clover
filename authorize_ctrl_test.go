@@ -313,7 +313,7 @@ func (t *AuthorizeCtrlSuite) TestHandleAuthorize() {
 	client.Scope = []string{"1"}
 
 	mockResp.On("SupportGrant").Return(AUTHORIZATION_CODE)
-	mockResp.On("Response", mock.Anything, "userid").Return(newRespData(nil).setRedirect("", false, ""))
+	mockResp.On("Response", mock.Anything, "userid").Return(NewRespData(nil).setRedirect("", false, ""))
 	t.store.On("GetClient", ar.clientID).Return(client, nil)
 
 	resp := t.ctrl.authorize(ar, authRespTypes, true, "userid")

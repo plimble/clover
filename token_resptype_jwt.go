@@ -41,7 +41,7 @@ func (rt *tokenJWTRespType) Response(td *TokenData, includeRefresh bool) *Respon
 
 	data := rt.base.createRespData(token, td.Scope, rToken, "", td.Data)
 
-	return newRespData(data)
+	return NewRespData(data)
 }
 
 func (rt *tokenJWTRespType) encodeJWT(clientID, userID string, scopes []string, expires int64, privateKey, algo string) (string, error) {

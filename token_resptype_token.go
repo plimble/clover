@@ -29,5 +29,5 @@ func (rt *tokenAccessTokenRespType) Response(td *TokenData, includeRefresh bool)
 
 	data := rt.base.createRespData(aToken.AccessToken, aToken.Scope, rToken, "", aToken.Data)
 
-	return newRespData(data)
+	return NewRespData(data)
 }

@@ -22,7 +22,7 @@ func (rt *codeRespType) Response(ad *AuthorizeData, userID string) *Response {
 
 	data := rt.createRespData(ac.Code, ad.State)
 
-	return newRespData(data).setRedirect(ad.RedirectURI, ad.respType.IsImplicit(), ad.State)
+	return NewRespData(data).setRedirect(ad.RedirectURI, ad.respType.IsImplicit(), ad.State)
 }
 
 func (rt *codeRespType) Name() string {
