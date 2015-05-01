@@ -201,7 +201,7 @@ func (t *ResourceServerSuite) TestVerifyAccessToken_NoScopeSupport() {
 
 	t.store.On("GetAccessToken", "123").Return(expat, nil)
 
-	at, resp := t.resource.VerifyAccessToken(w, r, "1", "3")
+	at, resp := t.resource.VerifyAccessToken(w, r, "3", "4")
 
 	t.Equal(errInsufficientScope, resp)
 	t.Nil(at)

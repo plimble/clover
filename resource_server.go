@@ -60,11 +60,13 @@ func (s *ResourceServer) VerifyAccessToken(w http.ResponseWriter, r *http.Reques
 		return nil, s.setHeader(errInsufficientScope, scopes, w)
 	}
 
-	if !checkScope(at.Scope, scopes...) {
-		return nil, s.setHeader(errInsufficientScope, scopes, w)
+	for i := 0; i < len(scopes); i++ {
+		if checkScope(at.Scope, scopes[i]) {
+			return at, nil
+		}
 	}
 
-	return at, nil
+	return nil, s.setHeader(errInsufficientScope, scopes, w)
 }
 
 func (s *ResourceServer) setHeader(resp *Response, scopes []string, w http.ResponseWriter) *Response {
