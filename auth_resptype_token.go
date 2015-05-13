@@ -2,6 +2,7 @@ package clover
 
 import (
 	"github.com/plimble/unik"
+	"github.com/plimble/unik/uuid"
 )
 
 type authTokenRespType struct {
@@ -12,7 +13,7 @@ type authTokenRespType struct {
 func NewImplicitRespType(accessTokenstore AccessTokenStore, refreshTokenStore RefreshTokenStore, accessLifeTime, refreshLifeTime int) AuthorizeRespType {
 	return &authTokenRespType{
 		base: newBaseTokenRespType(accessTokenstore, refreshTokenStore, accessLifeTime, refreshLifeTime),
-		unik: unik.NewUUID1Base64(),
+		unik: uuid.NewV1(),
 	}
 }
 

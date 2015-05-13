@@ -2,6 +2,7 @@ package clover
 
 import (
 	"github.com/plimble/unik"
+	"github.com/plimble/unik/uuid"
 )
 
 type codeRespType struct {
@@ -11,7 +12,7 @@ type codeRespType struct {
 }
 
 func NewCodeRespType(authcodeStore AuthCodeStore, authcodeLifeTime int) AuthorizeRespType {
-	return &codeRespType{authcodeStore, authcodeLifeTime, unik.NewUUID1Base64()}
+	return &codeRespType{authcodeStore, authcodeLifeTime, uuid.NewV1()}
 }
 
 func (rt *codeRespType) Response(ad *AuthorizeData, userID string) *Response {

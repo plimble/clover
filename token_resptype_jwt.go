@@ -3,6 +3,7 @@ package clover
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/plimble/unik"
+	"github.com/plimble/unik/uuid"
 	"strings"
 	"time"
 )
@@ -17,7 +18,7 @@ func NewJWTAccessTokenRespType(publicKeyStore PublicKeyStore, refreshTokenStore 
 	return &tokenJWTRespType{
 		publicKeyStore: publicKeyStore,
 		base:           newBaseTokenRespType(nil, refreshTokenStore, accessLifeTime, refreshLifeTime),
-		unik:           unik.NewUUID1Base64(),
+		unik:           uuid.NewV1(),
 	}
 }
 
