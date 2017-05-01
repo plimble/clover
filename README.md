@@ -1,6 +1,6 @@
 Clover
 ---
-![GoDoc](https://godoc.org/graphql.co/graphql?status.svg)
+[![GoDoc](https://godoc.org/plimble/clover?status.svg)](https://godoc.org/github.com/plimble/clover)
 [![Build Status](https://travis-ci.org/plimble/clover.svg?branch=master)](https://travis-ci.org/plimble/clover?branch=master)
 [![Coverage Status](https://coveralls.io/repos/plimble/clover/badge.svg?branch=master&service=github&foo)](https://coveralls.io/github/plimble/clover?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/plimble/clover)](https://goreportcard.com/report/plimble/clover)
