@@ -24,3 +24,8 @@ _testmain.go
 *.prof
 example/example
 coverage.out
+vendor
+.DS_Store
+server/server
+server
+v1
