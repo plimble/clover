@@ -15,12 +15,16 @@ go get gopkg.in/plimble/clover.v2
 ```
 
 ### Roadmap
-- [ ] Grant Types [RFC6749](https://tools.ietf.org/html/rfc6749)
-  - [ ] Authorization Code Grant
-  - [ ] Implicit Grant
-  - [x] Resource Owner Password Credentials Grant
-  - [x] Client Credentials Grant
-  - [x] Extension Grants
-- [x] Refresh Token
+- [ ] OAuth2 [RFC6749](https://tools.ietf.org/html/rfc6749)
+  - [ ] Authorize Request
+    - [ ] Code Response Type
+    - [ ] Token Response Type
+  - [x] Access Token
+    - [x] Authorization Code Grant
+    - [x] Resource Owner Password Credentials Grant
+    - [x] Client Credentials Grant
+    - [x] Extension Grants
+  - [x] Verification Access Token Request
 - [ ] JSON Web Token (JWT) [RFC7523](https://tools.ietf.org/html/rfc7523)
+- [x] Token Revocation [RFC7009](https://tools.ietf.org/html/rfc7009)
 - [ ] Security Considerations [RFC6819](https://tools.ietf.org/html/rfc6819)

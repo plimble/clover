@@ -2,24 +2,31 @@ package clover
 
 import (
 	"testing"
+
+	basicerr "errors"
+	"fmt"
+
+	"github.com/pkg/errors"
 )
 
-func TestStackError(t *testing.T) {
-	err := NewError(500, "error_code", "error!!")
-	nerr, ok := err.(Error)
-	if !ok {
-		t.Error("error should be Error struct")
-	}
+func TestError(t *testing.T) {
+	err := aa()
+	fmt.Printf("%+v\n", err)
 
-	if nerr.Code() != "error_code" {
-		t.Error(`error code should be "error_code"`)
-	}
+	xerr := errors.WithStack(ErrInvalidRefreshToken)
+	fmt.Printf("%+v\n", xerr)
+}
 
-	if nerr.HTTPCode() != 500 {
-		t.Error(`error http code should be 500`)
-	}
+func aa() error {
+	err := bb()
+	return ErrGrantTypeNotFound.WithCause(err)
+}
 
-	if nerr.Message() != "error!!" {
-		t.Error(`error http code should be "error!!"`)
-	}
+func bb() error {
+	err := cc()
+	return errors.WithStack(err)
+}
+
+func cc() error {
+	return basicerr.New("xxxx")
 }

@@ -2,20 +2,30 @@ package clover
 
 import (
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
-type ClientCredentialsGrantType struct {
+type PassowrdGrantType struct {
 	tokenManager TokenManager
 	config       *Config
+	userStore    UserStore
 }
 
-func NewClientCredentialsGrantType(tokenManager TokenManager, config *Config) *ClientCredentialsGrantType {
-	return &ClientCredentialsGrantType{tokenManager, config}
+func NewPassowrdGrantType(tokenManager TokenManager, config *Config, userStore UserStore) *PassowrdGrantType {
+	return &PassowrdGrantType{tokenManager, config, userStore}
 }
 
-func (g *ClientCredentialsGrantType) Validate(req *AccessTokenReq) error {
-	if req.Client.Public {
-		return ErrPublicClient
+func (g *PassowrdGrantType) Validate(req *AccessTokenReq) error {
+	username := req.Form.Get("username")
+	password := req.Form.Get("password")
+	if username == "" || password == "" {
+		return errors.WithStack(ErrUsernamePasswordRequired)
+	}
+
+	user, err := g.userStore.GetUser(req.Form.Get("username"), req.Form.Get("password"))
+	if err != nil {
+		return ErrInvalidUsernamePassword.WithCause(errors.WithStack(err))
 	}
 
 	scopes, err := DefaultGrantCheckScope(req.Scopes, req.Client.Scopes)
@@ -23,16 +33,17 @@ func (g *ClientCredentialsGrantType) Validate(req *AccessTokenReq) error {
 		return err
 	}
 
+	req.UserID = user.ID
 	req.Scopes = scopes
 
 	return nil
 }
 
-func (g *ClientCredentialsGrantType) Name() string {
-	return "client_credentials"
+func (g *PassowrdGrantType) Name() string {
+	return "password"
 }
 
-func (g *ClientCredentialsGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error) {
+func (g *PassowrdGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error) {
 	accessToken, err := g.tokenManager.GenerateAccessToken(req.Client.ID, req.UserID, g.config.AccessTokenLifespan, req.Scopes)
 	if err != nil {
 		return nil, err

@@ -5,8 +5,12 @@ type Config struct {
 	AccessTokenLifespan int
 	// AuthorizeCodeLifespan sets how long an authorize code is going to be valid.
 	AuthorizeCodeLifespan int
-	// IDTokenLifespan sets how long an id token is going to be valid.
-	IDTokenLifespan int
+	// RefreshTokenLifespan sets how long an refresh token is going to be valid.
+	RefreshTokenLifespan int
 
-	ScopeNotAllowedPublicClient string
+	EnableRefreshToken bool
+
+	// hmac or jwt
+	Token         string
+	HMACGlobalKey string
 }

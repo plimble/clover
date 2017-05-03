@@ -6,6 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCheckScope(t *testing.T) {
+	scopes := []string{"foo", "bar.baz", "baz.baz.1", "baz.baz.2", "baz.baz.3", "baz.baz.baz"}
+	needles := []string{"foo.bar", "bar.baz"}
+	assert.True(t, CheckScope(scopes, needles))
+}
+
 func TestHierarchicScope(t *testing.T) {
 	var scopes = []string{}
 	assert.False(t, hierarchicScope(scopes, "foo.bar.baz"))

@@ -1,6 +1,8 @@
 package clover
 
-import "strings"
+import (
+	"strings"
+)
 
 func CheckScope(scopes, needles []string) bool {
 	matched := 0
@@ -20,12 +22,10 @@ func CheckScope(scopes, needles []string) bool {
 
 func hierarchicScope(haystack []string, needle string) bool {
 	for _, this := range haystack {
-		// foo == foo -> true
 		if this == needle {
 			return true
 		}
 
-		// picture.read > picture -> false (scope picture includes read, write, ...)
 		if len(this) > len(needle) {
 			continue
 		}

@@ -33,7 +33,10 @@ func (c *Client) IsRedirectURI(uri string) bool {
 
 //go:generate mockery -name ClientManager -case underscore
 type ClientManager interface {
-	GetClient(id, secret string) (*Client, error)
+	Get(id string) (*Client, error)
+	GetWithSecret(id, secret string) (*Client, error)
+	Delete(id string) error
+	Save(client *Client) error
 }
 
 type clientManager struct {
@@ -46,6 +49,38 @@ func NewClientManager(storage ClientStore) ClientManager {
 	}
 }
 
-func (c *clientManager) GetClient(id, secret string) (*Client, error) {
-	return nil, nil
+func (c *clientManager) Get(id string) (*Client, error) {
+	client, err := c.storage.GetClient(id)
+	if err != nil {
+		return nil, ErrInvalidClient(id).WithCause(err)
+	}
+
+	return client, nil
+}
+
+func (c *clientManager) GetWithSecret(id, secret string) (*Client, error) {
+	client, err := c.storage.GetClientWithSecret(id, secret)
+	if err != nil {
+		return nil, ErrInvalidClient(id).WithCause(err)
+	}
+
+	return client, nil
+}
+
+func (c *clientManager) Delete(id string) error {
+	err := c.storage.DeleteClient(id)
+	if err != nil {
+		return ErrInternalServer.WithCause(err)
+	}
+
+	return nil
+}
+
+func (c *clientManager) Save(client *Client) error {
+	err := c.storage.SaveClient(client)
+	if err != nil {
+		return ErrInternalServer.WithCause(err)
+	}
+
+	return nil
 }
