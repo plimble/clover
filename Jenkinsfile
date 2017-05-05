@@ -4,17 +4,17 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                docker -v
+                sh 'docker -v'
             }
         }
         stage('Test'){
             steps {
-                docker -v
+                sh 'docker -v'
             }
         }
         stage('Deploy') {
             steps {
-                docker -v
+                sh 'docker -v'
             }
         }
     }
