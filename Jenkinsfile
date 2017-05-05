@@ -9,7 +9,8 @@ pipeline {
         }
         stage('Test'){
             steps {
-                sh 'docker -v'
+                sh 'go version'
+                sh 'go env'
             }
         }
         stage('Deploy') {
