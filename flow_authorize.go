@@ -23,7 +23,11 @@ type authorizeFlow struct {
 	scopeValidator ScopeValidator
 }
 
-func (f *authorizeFlow) run(ctx *AuthorizeContext) *AuthorizeRes {
+func NewAuthorizeFlow(tokenManager TokenManager, resTypes map[string]ResponseType, scopeValidator ScopeValidator, clientStorage ClientStorage, consent Consent, session sessions.Store) *authorizeFlow {
+	return &authorizeFlow{resTypes, tokenManager, clientStorage, consent, session, scopeValidator}
+}
+
+func (f *authorizeFlow) Run(ctx *AuthorizeContext) *AuthorizeRes {
 	var err error
 	if ctx.Challenge == "" {
 		if err := f.validateAuthorize(ctx); err != nil {

@@ -14,7 +14,7 @@ var (
 	errInvalidAuthHeader        = Error(400, "invalid_client", "Invalid authorization header")
 	errInvalidAuthMessage       = Error(400, "invalid_client", "Invalid authorization message")
 	errClientCredentialRequired = Error(400, "invalid_client", "client credentials are required")
-	errGrantTypeNotFound        = Error(400, "invalid_request", "The request method must be POST when requesting an access token")
+	errGrantTypeNotFound        = Error(400, "invalid_request", `Missing parameters: "grant_type" required`)
 	errInternalServer           = Error(500, "internal_server", "Internal Server Error")
 	errPublicClient             = Error(400, "invalid_client", "The client is public and thus not allowed to use grant type client_credentials")
 	errInvalidUsernamePassword  = Error(400, "invalid_grant", "Invalid username or password")

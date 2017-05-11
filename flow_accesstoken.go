@@ -20,7 +20,11 @@ type accessTokenFlow struct {
 	clientStorage  ClientStorage
 }
 
-func (f *accessTokenFlow) run(ctx *AccessTokenContext) (*AccessTokenRes, error) {
+func NewAccessTokenFlow(tokenManager TokenManager, grantTypes map[string]GrantType, scopeValidator ScopeValidator, clientStorage ClientStorage) *accessTokenFlow {
+	return &accessTokenFlow{tokenManager, grantTypes, scopeValidator, clientStorage}
+}
+
+func (f *accessTokenFlow) Run(ctx *AccessTokenContext) (*AccessTokenRes, error) {
 	if ctx.Method != "POST" {
 		return nil, errors.WithStack(errMethodPostRequired)
 	}
@@ -31,7 +35,7 @@ func (f *accessTokenFlow) run(ctx *AccessTokenContext) (*AccessTokenRes, error) 
 
 	grant, ok := f.grantTypes[ctx.GrantType]
 	if !ok {
-		return nil, errors.WithStack(ErrGrantTypeNotSupport(grant.Name()))
+		return nil, errors.WithStack(ErrGrantTypeNotSupport(ctx.GrantType))
 	}
 
 	clientID, clientSecret, err := getCredentialsFromHttp(ctx.AuthorizationHeader)

@@ -26,7 +26,7 @@ type introspectionFlow struct {
 	tokenManager  TokenManager
 }
 
-func (f *introspectionFlow) run(ctx *IntrospectionContext) (*IntrospectionRes, error) {
+func (f *introspectionFlow) Run(ctx *IntrospectionContext) (*IntrospectionRes, error) {
 	if ctx.Method != "POST" {
 		return nil, errors.WithStack(errMethodPostRequired)
 	}

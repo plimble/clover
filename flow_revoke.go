@@ -11,7 +11,7 @@ type revokeFlow struct {
 	tokenManager  TokenManager
 }
 
-func (f *revokeFlow) run(ctx *RevokeContext) error {
+func (f *revokeFlow) Run(ctx *RevokeContext) error {
 	token := ctx.Form.Get("token")
 	tokenType := ctx.Form.Get("token_type_hint")
 
