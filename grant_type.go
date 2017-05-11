@@ -1,31 +1,8 @@
 package clover
 
-import "github.com/pkg/errors"
-
-type GrantData struct {
-	UserID string
-	Scopes []string
-}
-
+// GrantType use this interface for implement extension grant type
 type GrantType interface {
-	Validate(req *AccessTokenReq) error
+	Validate(ctx *AccessTokenContext, tokenManager TokenManager) error
 	Name() string
-	CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error)
-}
-
-func DefaultGrantCheckScope(grantScopes []string, clientScopes []string) ([]string, error) {
-	if len(grantScopes) > 0 {
-		if len(clientScopes) > 0 {
-			if ok := CheckScope(clientScopes, grantScopes); !ok {
-				return nil, errors.WithStack(ErrInvalidScope)
-			}
-			return grantScopes, nil
-		} else {
-			return nil, errors.WithStack(ErrUnSupportedScope)
-		}
-	} else if len(clientScopes) > 0 {
-		return clientScopes, nil
-	}
-
-	return nil, errors.WithStack(ErrUnSupportedScope)
+	CreateAccessToken(ctx *AccessTokenContext, tokenManager TokenManager) (*AccessTokenRes, error)
 }

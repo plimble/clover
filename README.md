@@ -14,17 +14,26 @@ WIP Reimplement oauth2 server
 go get gopkg.in/plimble/clover.v2
 ```
 
-### Roadmap
-- [ ] OAuth2 [RFC6749](https://tools.ietf.org/html/rfc6749)
-  - [ ] Authorize Request
-    - [ ] Code Response Type
-    - [ ] Token Response Type
+### Features
+- [x] OAuth2 [RFC6749](https://tools.ietf.org/html/rfc6749)
+  - [x] Authorization
+    - [x] Code Response Type
+    - [x] Token Response Type
   - [x] Access Token
     - [x] Authorization Code Grant
     - [x] Resource Owner Password Credentials Grant
     - [x] Client Credentials Grant
     - [x] Extension Grants
-  - [x] Verification Access Token Request
-- [ ] JSON Web Token (JWT) [RFC7523](https://tools.ietf.org/html/rfc7523)
+- [x] JWT Access Token [RFC7519](https://tools.ietf.org/html/rfc7519)
 - [x] Token Revocation [RFC7009](https://tools.ietf.org/html/rfc7009)
-- [ ] Security Considerations [RFC6819](https://tools.ietf.org/html/rfc6819)
+- [x] Token Introspection [RFC7662](https://tools.ietf.org/html/rfc7662)
+- [ ] Security Considerations [RFC6819](https://tools.ietf.org/html/rfc6819), [RFC6749](https://tools.ietf.org/html/rfc6749#section-10)
+- [ ] Storage
+  - [ ] Dynamodb
+  - [x] Memory
+  - [ ] Postgres
+  - [ ] MySql
+  - [ ] RethinkDb
+  - [ ] Redis
+- [ ] API
+- [ ] CLI

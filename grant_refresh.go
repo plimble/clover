@@ -6,46 +6,40 @@ import (
 	"github.com/pkg/errors"
 )
 
-type RefreshGrantType struct {
-	tokenManager TokenManager
-	config       *Config
-}
+type RefreshTokenGrantType struct{}
 
-func NewRefreshGrantType(tokenManager TokenManager, config *Config) *RefreshGrantType {
-	return &RefreshGrantType{tokenManager, config}
-}
-
-func (g *RefreshGrantType) Validate(req *AccessTokenReq, client *Client) error {
-	token := req.Form.Get("refresh_token")
-	if token == "" {
-		return errors.WithStack(ErrRefreshTokenRequired)
+func (g *RefreshTokenGrantType) Validate(ctx *AccessTokenContext, tokenManager TokenManager) error {
+	if ctx.RefreshToken == "" {
+		return errors.WithStack(errRefreshTokenRequired)
 	}
 
-	refreshToken, err := g.tokenManager.GetRefreshToken(token)
+	refreshToken, err := tokenManager.GetRefreshToken(ctx.RefreshToken)
 	if err != nil {
-		return err
+		return errInvalidRefreshToken.WithCause(err)
 	}
 
-	if refreshToken.ClientID != req.Client.ID {
-		return errors.WithStack(ErrClientIDMisMatch)
+	if refreshToken.ClientID != ctx.Client.ID {
+		return errors.WithStack(errClientIDMisMatch)
 	}
 
 	if isExpireUnix(refreshToken.Expired) {
-		return errors.WithStack(ErrRefreshTokenExpired)
+		return errors.WithStack(errRefreshTokenExpired)
 	}
 
-	req.UserID = refreshToken.UserID
-	req.Scopes = refreshToken.Scopes
+	ctx.UserID = refreshToken.UserID
+	ctx.Scopes = refreshToken.Scopes
+	ctx.AccessTokenLifespan = refreshToken.AccessTokenLifespan
+	ctx.RefreshTokenLifespan = refreshToken.RefreshTokenLifespan
 
 	return nil
 }
 
-func (g *RefreshGrantType) Name() string {
+func (g *RefreshTokenGrantType) Name() string {
 	return "refresh_token"
 }
 
-func (g *RefreshGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error) {
-	accessToken, err := g.tokenManager.GenerateAccessToken(req.Client.ID, req.UserID, g.config.AccessTokenLifespan, req.Scopes)
+func (g *RefreshTokenGrantType) CreateAccessToken(ctx *AccessTokenContext, tokenManager TokenManager) (*AccessTokenRes, error) {
+	accessToken, refreshToken, err := tokenManager.GenerateAccessToken(ctx, ctx.Client.IncludeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -53,22 +47,17 @@ func (g *RefreshGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenR
 	res := &AccessTokenRes{
 		AccessToken: accessToken.AccessToken,
 		TokenType:   "bearer",
-		ExpiresIn:   g.config.AccessTokenLifespan,
-		Scope:       strings.Join(req.Scopes, " "),
-		UserID:      req.UserID,
+		ExpiresIn:   ctx.AccessTokenLifespan,
+		Scope:       strings.Join(accessToken.Scopes, " "),
+		UserID:      accessToken.UserID,
 	}
 
-	if g.config.EnableRefreshToken {
-		refreshToken, err := g.tokenManager.GenerateRefreshToken(req.Client.ID, req.UserID, g.config.RefreshTokenLifespan, req.Scopes)
-		if err != nil {
-			return nil, err
-		}
-
+	if ctx.Client.IncludeRefreshToken {
 		res.RefreshToken = refreshToken.RefreshToken
 	}
 
-	if err = g.tokenManager.DeleteRefreshToken(req.Form.Get("refresh_token")); err != nil {
-		return nil, ErrInternalServer.WithCause(errors.WithStack(err))
+	if err = tokenManager.DeleteRefreshToken(ctx.RefreshToken); err != nil {
+		return nil, err
 	}
 
 	return res, nil

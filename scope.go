@@ -1,49 +1,15 @@
 package clover
 
-import (
-	"strings"
-)
-
-func CheckScope(scopes, needles []string) bool {
-	matched := 0
-
-	for i := 0; i < len(needles); i++ {
-		if hierarchicScope(scopes, needles[i]) {
-			matched++
-		}
-	}
-
-	if matched != len(scopes) {
-		return false
-	}
-
-	return true
+type Scope struct {
+	ID          string `json:"id"`
+	Description string `json:"description"`
 }
 
-func hierarchicScope(haystack []string, needle string) bool {
-	for _, this := range haystack {
-		if this == needle {
-			return true
-		}
-
-		if len(this) > len(needle) {
-			continue
-		}
-
-		needles := strings.Split(needle, ".")
-		haystack := strings.Split(this, ".")
-		haystackLen := len(haystack) - 1
-		for k, needle := range needles {
-			if haystackLen < k {
-				return true
-			}
-
-			current := haystack[k]
-			if current != needle {
-				break
-			}
-		}
-	}
-
-	return false
+//go:generate mockery -name ScopeValidator
+type ScopeValidator interface {
+	// Validate the request scopes and is it allowed in client scopes
+	// then return the valid scopes that use can use or return error if not valid
+	// example the request should available in database. then is should be subset of client scopes
+	// if the request scopes is empty you may return the default scopes
+	Validate(requestScopes, clientScopes []string) ([]string, error)
 }

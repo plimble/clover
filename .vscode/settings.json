@@ -1,0 +1,32 @@
+// Place your settings in this file to overwrite the default settings
+{
+    "editor.fontSize": 12,
+    "editor.lineHeight": 20,
+    "editor.tabSize": 2,
+    "files.trimTrailingWhitespace": true,
+    "go.buildOnSave": true,
+    "go.lintOnSave": true,
+    "go.lintTool": "golint",
+    "go.vetOnSave": true,
+    "go.buildFlags": [],
+    "go.lintFlags": [
+        "--disable-all",
+        "--enable=errcheck"
+    ],
+    "go.vetFlags": [
+        "-all",
+        "-composites=false"
+    ],
+    "go.useCodeSnippetsOnFunctionSuggest": false,
+    "go.formatOnSave": true,
+    "go.formatTool": "goreturns",
+    "go.goroot": "/usr/local/go",
+    "go.gopath": "/Users/witooh/dev/go",
+    "editor.scrollBeyondLastLine": false,
+    "javascript.validate.enable": false,
+    "eslint.enable": false,
+    "editor.formatOnType": false,
+    "git.enabled": false,
+    "editor.tabCompletion": true,
+    "explorer.openEditors.visible": 0
+}

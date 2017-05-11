@@ -2,28 +2,21 @@ package clover
 
 import (
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type ClientCredentialsGrantType struct {
-	tokenManager TokenManager
-	config       *Config
+	AccessTokenLifespan int
 }
 
-func NewClientCredentialsGrantType(tokenManager TokenManager, config *Config) *ClientCredentialsGrantType {
-	return &ClientCredentialsGrantType{tokenManager, config}
-}
-
-func (g *ClientCredentialsGrantType) Validate(req *AccessTokenReq) error {
-	if req.Client.Public {
-		return ErrPublicClient
+func (g *ClientCredentialsGrantType) Validate(ctx *AccessTokenContext, tokenManager TokenManager) error {
+	if ctx.Client.Public {
+		return errors.WithStack(errPublicClient)
 	}
 
-	scopes, err := DefaultGrantCheckScope(req.Scopes, req.Client.Scopes)
-	if err != nil {
-		return err
-	}
-
-	req.Scopes = scopes
+	ctx.Scopes = ctx.Client.Scopes
+	ctx.AccessTokenLifespan = g.AccessTokenLifespan
 
 	return nil
 }
@@ -32,28 +25,17 @@ func (g *ClientCredentialsGrantType) Name() string {
 	return "client_credentials"
 }
 
-func (g *ClientCredentialsGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error) {
-	accessToken, err := g.tokenManager.GenerateAccessToken(req.Client.ID, req.UserID, g.config.AccessTokenLifespan, req.Scopes)
+func (g *ClientCredentialsGrantType) CreateAccessToken(ctx *AccessTokenContext, tokenManager TokenManager) (*AccessTokenRes, error) {
+	accessToken, _, err := tokenManager.GenerateAccessToken(ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &AccessTokenRes{
+	return &AccessTokenRes{
 		AccessToken: accessToken.AccessToken,
 		TokenType:   "bearer",
-		ExpiresIn:   g.config.AccessTokenLifespan,
-		Scope:       strings.Join(req.Scopes, " "),
-		UserID:      req.UserID,
-	}
-
-	if g.config.EnableRefreshToken {
-		refreshToken, err := g.tokenManager.GenerateRefreshToken(req.Client.ID, req.UserID, g.config.RefreshTokenLifespan, req.Scopes)
-		if err != nil {
-			return nil, err
-		}
-
-		res.RefreshToken = refreshToken.RefreshToken
-	}
-
-	return res, nil
+		ExpiresIn:   ctx.AccessTokenLifespan,
+		Scope:       strings.Join(accessToken.Scopes, " "),
+		UserID:      accessToken.UserID,
+	}, nil
 }

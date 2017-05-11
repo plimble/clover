@@ -7,49 +7,49 @@ import (
 )
 
 type AuthorizeCodeGrantType struct {
-	tokenManager TokenManager
-	config       *Config
+	AccessTokenLifespan  int
+	RefreshTokenLifespan int
 }
 
-func NewAuthorizeCodeGrantType(tokenManager TokenManager, config *Config) *AuthorizeCodeGrantType {
-	return &AuthorizeCodeGrantType{tokenManager, config}
-}
-
-func (g *AuthorizeCodeGrantType) Validate(req *AccessTokenReq) error {
-	code := req.Form.Get("code")
-	if code == "" {
-		return errors.WithStack(ErrCodeRequired)
+func (g *AuthorizeCodeGrantType) Validate(ctx *AccessTokenContext, tokenManager TokenManager) error {
+	if ctx.Code == "" {
+		return errors.WithStack(errCodeRequired)
+	}
+	if ctx.RedirectURI == "" {
+		return errors.WithStack(errRedirectURIRequired)
 	}
 
-	authCode, err := g.tokenManager.GetAuthorizeCode(code)
+	authCode, err := tokenManager.GetAuthorizeCode(ctx.Code)
 	if err != nil {
 		return err
 	}
 
-	if authCode.ClientID != req.Client.ID {
-		return errors.WithStack(ErrClientIDMisMatch)
+	if authCode.ClientID != ctx.Client.ID {
+		return errors.WithStack(errClientIDMisMatch)
 	}
 
-	if authCode.RedirectURI != req.Form.Get("redirect_uri") {
-		return errors.WithStack(ErrRedirectMisMatch)
+	if authCode.RedirectURI != ctx.RedirectURI {
+		return errors.WithStack(errRedirectMisMatch)
 	}
 
 	if isExpireUnix(authCode.Expired) {
-		return errors.WithStack(ErrCodeExpired)
+		return errors.WithStack(errCodeExpired)
 	}
 
-	req.Scopes = authCode.Scopes
-	req.UserID = authCode.UserID
+	ctx.Scopes = authCode.Scopes
+	ctx.UserID = authCode.UserID
+	ctx.AccessTokenLifespan = g.AccessTokenLifespan
+	ctx.RefreshTokenLifespan = g.RefreshTokenLifespan
 
 	return nil
 }
 
 func (g *AuthorizeCodeGrantType) Name() string {
-	return "client_credentials"
+	return "authorization_code"
 }
 
-func (g *AuthorizeCodeGrantType) CreateAccessToken(req *AccessTokenReq) (*AccessTokenRes, error) {
-	accessToken, err := g.tokenManager.GenerateAccessToken(req.Client.ID, req.UserID, g.config.AccessTokenLifespan, req.Scopes)
+func (g *AuthorizeCodeGrantType) CreateAccessToken(ctx *AccessTokenContext, tokenManager TokenManager) (*AccessTokenRes, error) {
+	accessToken, refreshToken, err := tokenManager.GenerateAccessToken(ctx, ctx.Client.IncludeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -57,17 +57,12 @@ func (g *AuthorizeCodeGrantType) CreateAccessToken(req *AccessTokenReq) (*Access
 	res := &AccessTokenRes{
 		AccessToken: accessToken.AccessToken,
 		TokenType:   "bearer",
-		ExpiresIn:   g.config.AccessTokenLifespan,
-		Scope:       strings.Join(req.Scopes, " "),
-		UserID:      req.UserID,
+		ExpiresIn:   ctx.AccessTokenLifespan,
+		Scope:       strings.Join(accessToken.Scopes, " "),
+		UserID:      accessToken.UserID,
 	}
 
-	if g.config.EnableRefreshToken {
-		refreshToken, err := g.tokenManager.GenerateRefreshToken(req.Client.ID, req.UserID, g.config.RefreshTokenLifespan, req.Scopes)
-		if err != nil {
-			return nil, err
-		}
-
+	if ctx.Client.IncludeRefreshToken {
 		res.RefreshToken = refreshToken.RefreshToken
 	}
 
