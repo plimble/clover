@@ -16,7 +16,7 @@ type ScopeValidator struct {
 	storage ScopeStorage
 }
 
-func NewManager(storage ScopeStorage) *ScopeValidator {
+func New(storage ScopeStorage) *ScopeValidator {
 	return &ScopeValidator{storage}
 }
 
