@@ -3,6 +3,7 @@ package clover
 import (
 	"strings"
 	"sync"
+	"time"
 )
 
 // TokenManager Manage acess, refresh, authroize token
@@ -101,7 +102,7 @@ func (t *tokenManager) GenerateAccessToken(ctx *AccessTokenContext, includeRefre
 			AccessToken: acToken,
 			ClientID:    ctx.Client.ID,
 			UserID:      ctx.UserID,
-			Expired:     addSecondUnix(ctx.AccessTokenLifespan),
+			Expired:     time.Now().UTC().Truncate(time.Nanosecond).Add(time.Second * time.Duration(ctx.AccessTokenLifespan)).Unix(),
 			Scopes:      ctx.Scopes,
 		}
 
@@ -145,7 +146,7 @@ func (t *tokenManager) GenerateRefreshToken(ctx *AccessTokenContext) (*RefreshTo
 		RefreshToken:         token,
 		ClientID:             ctx.Client.ID,
 		UserID:               ctx.UserID,
-		Expired:              addSecondUnix(ctx.RefreshTokenLifespan),
+		Expired:              time.Now().UTC().Truncate(time.Nanosecond).Add(time.Second * time.Duration(ctx.RefreshTokenLifespan)).Unix(),
 		Scopes:               ctx.Scopes,
 		AccessTokenLifespan:  ctx.AccessTokenLifespan,
 		RefreshTokenLifespan: ctx.RefreshTokenLifespan,
@@ -171,7 +172,7 @@ func (t *tokenManager) GenerateAuthorizeCode(ctx *AuthorizeContext, authorizeCod
 		Code:         token,
 		ClientID:     ctx.Client.ID,
 		UserID:       ctx.UserID,
-		Expired:      addSecondUnix(authorizeCodeLifespan),
+		Expired:      time.Now().UTC().Truncate(time.Nanosecond).Add(time.Second * time.Duration(authorizeCodeLifespan)).Unix(),
 		Scopes:       ctx.Scopes,
 		RedirectURI:  ctx.RedirectURI,
 		ResponseType: ctx.ResponseType,

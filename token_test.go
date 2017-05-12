@@ -23,11 +23,7 @@ func TestTokenManager(t *testing.T) {
 }
 
 func addSecondUnix(sec int) int64 {
-	if sec == 0 {
-		return 0
-	}
-
-	return time.Now().UTC().Truncate(time.Nanosecond).Add(time.Minute * time.Duration(sec)).Unix()
+	return time.Now().UTC().Truncate(time.Nanosecond).Add(time.Second * time.Duration(sec)).Unix()
 }
 
 var accessTokenSampleData = []*clover.AccessToken{
