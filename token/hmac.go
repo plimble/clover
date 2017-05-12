@@ -22,7 +22,7 @@ type HMACTokenGenerator struct {
 
 var b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
-func New(secret []byte) *HMACTokenGenerator {
+func NewHMACTokenGenerator(secret []byte) *HMACTokenGenerator {
 	hmac := &HMACTokenGenerator{
 		secret: secret,
 	}

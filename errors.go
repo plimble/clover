@@ -44,6 +44,7 @@ var (
 	errChallengeExpired         = Error(400, "invalid_request", `challenge token has expire`)
 	errResponseTypeUnSupported  = Error(400, "invalid_request", `Response type unsupported`)
 	errInvalidClient            = Error(400, "invalid_grant", `Invalid client`)
+	errUserDenied               = Error(400, "invalid_request", `User denied authorize`)
 )
 
 func ErrGrantTypeNotSupport(grantType string) *errorRes {

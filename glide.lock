@@ -1,5 +1,5 @@
-hash: d6b90e3bd2f058b5dd31fe4a05d6f79f68eb743160625cf0d8906beedf2e6d19
-updated: 2017-05-12T02:32:10.48340918+07:00
+hash: 56260665d70a196c4e8fd0be6acb12dd668b79d04bcb950fd95f6d0de11fc576
+updated: 2017-05-12T21:08:40.67805684+07:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
@@ -15,6 +15,15 @@ imports:
   version: ca9ada44574153444b00d3fd9c8559e4cc95f896
 - name: github.com/labstack/echo
   version: 1049c9613cd371b7ea8f219404c9a821734781ed
+- name: github.com/labstack/gommon
+  version: 1121fd3e243c202482226a7afe4dcd07ffc4139a
+  subpackages:
+  - color
+  - log
+- name: github.com/mattn/go-colorable
+  version: ded68f7a9561c023e790de24279db7ebf473ea80
+- name: github.com/mattn/go-isatty
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
 - name: github.com/pborman/uuid
   version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pkg/errors
@@ -33,8 +42,21 @@ imports:
   - assert
   - mock
   - require
+- name: github.com/valyala/bytebufferpool
+  version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
+- name: github.com/valyala/fasttemplate
+  version: dcecefd839c4193db0d35b88ec65b4c12d360ab0
 - name: golang.org/x/crypto
-  version: 122d919ec1efcfb58483215da23f815853e24b81
+  version: ab89591268e0c8b748cbe4047b00197516011af5
   subpackages:
+  - acme
   - acme/autocert
+- name: golang.org/x/net
+  version: c9b681d35165f1995d6f3034e61f8761d4b90c99
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 9c9d83fe39ed3fd2d9249fcf6b755891fff54b03
+  subpackages:
+  - unix
 testImports: []

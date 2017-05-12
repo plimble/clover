@@ -13,7 +13,7 @@ func TestHMACToken(t *testing.T) {
 }
 
 func testGenerateFailsWithShortCredentials(t *testing.T) {
-	cg := New([]byte("foo"))
+	cg := NewHMACTokenGenerator([]byte("foo"))
 	challenge, err := cg.Generate("", "", "", 0)
 	signature := cg.Signature(challenge)
 	require.NotNil(t, err, "%s", err)
@@ -22,7 +22,7 @@ func testGenerateFailsWithShortCredentials(t *testing.T) {
 }
 
 func testGenerate(t *testing.T) {
-	cg := New([]byte("12345678901234567890"))
+	cg := NewHMACTokenGenerator([]byte("12345678901234567890"))
 
 	token, err := cg.Generate("", "", "", 0)
 	signature := cg.Signature(token)
@@ -37,14 +37,14 @@ func testGenerate(t *testing.T) {
 	require.Equal(t, signature, validateSignature)
 
 	// cg.secret = []byte("baz")
-	cg = New([]byte("baz"))
+	cg = NewHMACTokenGenerator([]byte("baz"))
 	err = cg.Validate(token)
 	require.NotNil(t, err, "%s", err)
 }
 
 func testValidateSignatureRejects(t *testing.T) {
 	var err error
-	cg := New([]byte("12345678901234567890"))
+	cg := NewHMACTokenGenerator([]byte("12345678901234567890"))
 	for k, c := range []string{
 		"",
 		" ",

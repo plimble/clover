@@ -1,13 +1,9 @@
 package clover
 
 type AuthorizeConfig struct {
-	AllowImplicit     bool
-	CookieSecret      string
-	RSAPrivateKeyPath string
-	RSAPublicKeyPath  string
-	ConsentUrl        string
-	ChallengeLifeSpan int
-	resTypes          map[string]ResponseType
+	CookieSecret string
+	Consent      Consent
+	resTypes     map[string]ResponseType
 }
 
 func (c *AuthorizeConfig) RegisterResponseType(resType ResponseType) {

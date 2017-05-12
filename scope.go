@@ -1,10 +1,5 @@
 package clover
 
-type Scope struct {
-	ID          string `json:"id"`
-	Description string `json:"description"`
-}
-
 //go:generate mockery -name ScopeValidator
 type ScopeValidator interface {
 	// Validate the request scopes and is it allowed in client scopes

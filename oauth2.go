@@ -40,11 +40,7 @@ func New(clientStorage ClientStorage, tokenStorage TokenStorage, strategy *Strat
 		tokenStore:            o.tokenStorage,
 	}
 
-	o.consent = NewConsent(
-		nil,
-		o.strategy.authorizeConfig.ConsentUrl,
-		o.strategy.authorizeConfig.ChallengeLifeSpan,
-	)
+	o.consent = o.strategy.authorizeConfig.Consent
 
 	o.accessTokenFlow = &accessTokenFlow{
 		tokenManager:   o.tokenManager,
@@ -110,13 +106,13 @@ func (o *oauth2) IntrospectionHandler(w http.ResponseWriter, r *http.Request) {
 func (o *oauth2) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, err := parseAuthorizeRequest(w, r)
 	if err != nil {
-		redirectError(&ctx.HTTPContext, o.strategy.authorizeConfig.ConsentUrl, err)
+		redirectError(&ctx.HTTPContext, o.consent.Url(), err)
 		return
 	}
 
 	res := o.authorizeFlow.Run(ctx)
 	if res.Error != nil {
-		redirectError(&ctx.HTTPContext, o.strategy.authorizeConfig.ConsentUrl, err)
+		redirectError(&ctx.HTTPContext, o.consent.Url(), err)
 		return
 	}
 

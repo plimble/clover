@@ -3,7 +3,7 @@ package sdk
 import (
 	"testing"
 
-	"github.com/plimble/clover"
+	"github.com/plimble/clover/scope"
 	"github.com/plimble/clover/sdk/mocks"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ func TestScope(t *testing.T) {
 	t.Run("GetAll", testScopeGetAll)
 }
 
-var scopeSampleData = []*clover.Scope{
+var scopeSampleData = []*scope.Scope{
 	{"s1", "desc"},
 	{"s1:read", "desc"},
 	{"s1:write", "desc"},

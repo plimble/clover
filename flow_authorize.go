@@ -38,6 +38,10 @@ func (f *authorizeFlow) Run(ctx *AuthorizeContext) *AuthorizeRes {
 		return &AuthorizeRes{RedirectURI: url, Error: err}
 	}
 
+	if ctx.Challenge == "denied" {
+		return &AuthorizeRes{Error: errUserDenied}
+	}
+
 	if err = f.validateChallenge(ctx); err != nil {
 		return &AuthorizeRes{Error: err}
 	}
@@ -136,7 +140,11 @@ func (f *authorizeFlow) validateChallenge(ctx *AuthorizeContext) error {
 }
 
 func (f *authorizeFlow) createRedirectConsentURL(ctx *AuthorizeContext) (*url.URL, error) {
-	consentUrl, consentid, err := f.consent.UrlWithChallenge(ctx.Client.ID, strings.Join(ctx.Scopes, " "))
+	u := *ctx.request.URL
+	u.RawQuery = ""
+	u.Fragment = ""
+
+	consentUrl, consentid, err := f.consent.UrlWithChallenge(ctx.Client.ID, strings.Join(ctx.Scopes, " "), u.String())
 	if err != nil {
 		return nil, errInternalServer.WithCause(err)
 	}

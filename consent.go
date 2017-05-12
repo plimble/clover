@@ -22,7 +22,8 @@ type Challenge struct {
 
 //go:generate mockery -name Consent
 type Consent interface {
-	UrlWithChallenge(clientID, scope string) (*url.URL, string, error)
+	Url() string
+	UrlWithChallenge(clientID, scope, redirectUri string) (*url.URL, string, error)
 	ValidateChallenge(challenge string) (*Challenge, error)
 }
 
@@ -34,6 +35,10 @@ type consent struct {
 
 func NewConsent(privateKey *rsa.PrivateKey, consentUrl string, challengeLifeSpan int) Consent {
 	return &consent{privateKey, challengeLifeSpan, consentUrl}
+}
+
+func (c *consent) Url() string {
+	return c.consentUrl
 }
 
 func (c *consent) ValidateChallenge(challenge string) (*Challenge, error) {
@@ -64,15 +69,16 @@ func (c *consent) ValidateChallenge(challenge string) (*Challenge, error) {
 	return ch, nil
 }
 
-func (c *consent) UrlWithChallenge(clientID, scope string) (*url.URL, string, error) {
+func (c *consent) UrlWithChallenge(clientID, scope, redirectURI string) (*url.URL, string, error) {
 	now := time.Now().UTC().Truncate(time.Nanosecond)
 
 	id := uuid.New()
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"jti": id,
-		"aud": clientID,
-		"scp": scope,
-		"exp": now.Add(time.Minute * time.Duration(c.challengeLifeSpan)).Unix(),
+		"jti":   id,
+		"aud":   clientID,
+		"scp":   scope,
+		"exp":   now.Add(time.Minute * time.Duration(c.challengeLifeSpan)).Unix(),
+		"redir": redirectURI,
 	})
 
 	challenge, err := token.SignedString(c.privateKey)

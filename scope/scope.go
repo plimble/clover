@@ -4,12 +4,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/plimble/clover"
 )
+
+type Scope struct {
+	ID          string `json:"id"`
+	Description string `json:"description"`
+}
 
 //go:generate mockery -name ScopeStorage
 type ScopeStorage interface {
-	GetScopeByIDs(ids []string) ([]*clover.Scope, error)
+	GetScopeByIDs(ids []string) ([]*Scope, error)
 }
 
 type ScopeValidator struct {

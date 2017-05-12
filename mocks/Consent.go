@@ -9,13 +9,27 @@ type Consent struct {
 	mock.Mock
 }
 
-// UrlWithChallenge provides a mock function with given fields: clientID, scope
-func (_m *Consent) UrlWithChallenge(clientID string, scope string) (*url.URL, string, error) {
-	ret := _m.Called(clientID, scope)
+// Url provides a mock function with given fields:
+func (_m *Consent) Url() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// UrlWithChallenge provides a mock function with given fields: clientID, scope, redirectUri
+func (_m *Consent) UrlWithChallenge(clientID string, scope string, redirectUri string) (*url.URL, string, error) {
+	ret := _m.Called(clientID, scope, redirectUri)
 
 	var r0 *url.URL
-	if rf, ok := ret.Get(0).(func(string, string) *url.URL); ok {
-		r0 = rf(clientID, scope)
+	if rf, ok := ret.Get(0).(func(string, string, string) *url.URL); ok {
+		r0 = rf(clientID, scope, redirectUri)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*url.URL)
@@ -23,15 +37,15 @@ func (_m *Consent) UrlWithChallenge(clientID string, scope string) (*url.URL, st
 	}
 
 	var r1 string
-	if rf, ok := ret.Get(1).(func(string, string) string); ok {
-		r1 = rf(clientID, scope)
+	if rf, ok := ret.Get(1).(func(string, string, string) string); ok {
+		r1 = rf(clientID, scope, redirectUri)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(string, string) error); ok {
-		r2 = rf(clientID, scope)
+	if rf, ok := ret.Get(2).(func(string, string, string) error); ok {
+		r2 = rf(clientID, scope, redirectUri)
 	} else {
 		r2 = ret.Error(2)
 	}
