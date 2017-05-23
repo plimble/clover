@@ -25,6 +25,10 @@ func UnknownError() *AppErr {
 	return &AppErr{"unknown error", 500, "unknown", nil}
 }
 
+func DbNotFoundError(err error) *AppErr {
+	return &AppErr{"db not found", 404, "not_found", err}
+}
+
 func (e *AppErr) Error() string { return e.Message }
 func (e *AppErr) Cause() error  { return e.cause }
 func (e *AppErr) WithCause(err error) *AppErr {

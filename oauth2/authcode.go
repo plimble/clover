@@ -3,14 +3,14 @@ package oauth2
 import "time"
 
 type AuthorizeCode struct {
-	Code         string                 `json:"code"`
-	ClientID     string                 `json:"client_id"`
-	UserID       string                 `json:"user_id"`
-	Expired      int64                  `json:"expired"`
-	Scopes       []string               `json:"scopes"`
-	RedirectURI  string                 `json:"redirect_uri"`
-	ResponseType string                 `json:"response_type"`
-	Extras       map[string]interface{} `json:"extras"`
+	Code         string                 `json:"c"`
+	ClientID     string                 `json:"cid"`
+	UserID       string                 `json:"uid"`
+	Expired      int64                  `json:"exp"`
+	Scopes       []string               `json:"scp"`
+	RedirectURI  string                 `json:"rdr"`
+	ResponseType string                 `json:"rpt"`
+	Extras       map[string]interface{} `json:"ext"`
 }
 
 func (a *AuthorizeCode) Valid() bool {

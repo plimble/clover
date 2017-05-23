@@ -3,14 +3,14 @@ package oauth2
 import "time"
 
 type RefreshToken struct {
-	RefreshToken         string                 `json:"refresh_token"`
-	ClientID             string                 `json:"client_id"`
-	UserID               string                 `json:"user_id"`
-	Expired              int64                  `json:"expired"`
-	Scopes               []string               `json:"scope"`
-	AccessTokenLifespan  int                    `json:"access_token_lifespan"`
-	RefreshTokenLifespan int                    `json:"refresh_token_lifespan"`
-	Extras               map[string]interface{} `json:"extras"`
+	RefreshToken         string                 `json:"rt"`
+	ClientID             string                 `json:"cid"`
+	UserID               string                 `json:"uid"`
+	Expired              int64                  `json:"exp"`
+	Scopes               []string               `json:"scp"`
+	AccessTokenLifespan  int                    `json:"atl"`
+	RefreshTokenLifespan int                    `json:"rtl"`
+	Extras               map[string]interface{} `json:"ext"`
 }
 
 func (r *RefreshToken) Valid() bool {

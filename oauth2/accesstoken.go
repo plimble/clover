@@ -3,13 +3,13 @@ package oauth2
 import "time"
 
 type AccessToken struct {
-	AccessToken string                 `json:"access_token"`
-	ClientID    string                 `json:"client_id,omitempty"`
-	UserID      string                 `json:"user_id,omitempty"`
-	Expired     int64                  `json:"expired"`
-	ExpiresIn   int                    `json:"expires_in"`
-	Scopes      []string               `json:"scopes"`
-	Extras      map[string]interface{} `json:"extras"`
+	AccessToken string                 `json:"at"`
+	ClientID    string                 `json:"cid,omitempty"`
+	UserID      string                 `json:"uid,omitempty"`
+	Expired     int64                  `json:"exp"`
+	ExpiresIn   int                    `json:"ein"`
+	Scopes      []string               `json:"scp"`
+	Extras      map[string]interface{} `json:"ext"`
 }
 
 func (a *AccessToken) Valid() bool {

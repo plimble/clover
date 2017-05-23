@@ -13,7 +13,7 @@ type DynamoDB struct {
 	db *dynamodb.DynamoDB
 }
 
-func NewDynamoDB(id, secret, region string) (*DynamoDB, error) {
+func New(id, secret, region string) (*DynamoDB, error) {
 	config := aws.NewConfig()
 	config.WithCredentials(credentials.NewStaticCredentials(id, secret, ""))
 	config.WithRegion(region)
@@ -30,19 +30,75 @@ func (s *DynamoDB) GetClientWithSecret(id, secret string) (*oauth2.Client, error
 }
 
 func (s *DynamoDB) GetRefreshToken(refreshToken string) (*oauth2.RefreshToken, error) {
-	// output := s.db.GetItem(&dynamodb.GetItemInput{
-	// 	Key: nil,
-	// })
+	res, err := s.db.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String("oauth_refreshtoken"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"rt": {
+				S: aws.String(refreshToken),
+			},
+		},
+	})
 
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Item) == 0 {
+		return nil, oauth2.DbNotFoundError(err)
+	}
+
+	at := &oauth2.RefreshToken{}
+	err = dynamodbattribute.UnmarshalMap(res.Item, at)
+
+	return at, err
 }
 
 func (s *DynamoDB) GetAuthorizeCode(code string) (*oauth2.AuthorizeCode, error) {
-	return nil, nil
+	res, err := s.db.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String("oauth_authcode"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"c": {
+				S: aws.String(code),
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Item) == 0 {
+		return nil, oauth2.DbNotFoundError(err)
+	}
+
+	at := &oauth2.AuthorizeCode{}
+	err = dynamodbattribute.UnmarshalMap(res.Item, at)
+
+	return at, err
 }
 
 func (s *DynamoDB) GetAccessToken(accessToken string) (*oauth2.AccessToken, error) {
-	return nil, nil
+	res, err := s.db.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String("oauth_accesstoken"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"at": {
+				S: aws.String(accessToken),
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Item) == 0 {
+		return nil, oauth2.DbNotFoundError(err)
+	}
+
+	at := &oauth2.AccessToken{}
+	err = dynamodbattribute.UnmarshalMap(res.Item, at)
+
+	return at, err
 }
 
 func (s *DynamoDB) SaveAccessToken(accessToken *oauth2.AccessToken) error {
@@ -51,30 +107,89 @@ func (s *DynamoDB) SaveAccessToken(accessToken *oauth2.AccessToken) error {
 		return err
 	}
 
-	s.db.PutItem(&dynamodb.PutItemInput{
-		TableName: aws.String("oauth2_accesstoken"),
+	_, err = s.db.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String("oauth_accesstoken"),
 		Item:      data,
 	})
 
-	return nil
+	return err
 }
 
 func (s *DynamoDB) SaveRefreshToken(refreshToken *oauth2.RefreshToken) error {
-	return nil
+	data, err := dynamodbattribute.MarshalMap(refreshToken)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String("oauth_refreshtoken"),
+		Item:      data,
+	})
+
+	return err
 }
 
 func (s *DynamoDB) SaveAuthorizeCode(authCode *oauth2.AuthorizeCode) error {
-	return nil
+	data, err := dynamodbattribute.MarshalMap(authCode)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String("oauth_authcode"),
+		Item:      data,
+	})
+
+	return err
 }
 
 func (s *DynamoDB) IsAvailableScope(scopes []string) (bool, error) {
-	return false, nil
+	items := map[string]*dynamodb.KeysAndAttributes{
+		"oauth_scope": {
+			Keys: make([]map[string]*dynamodb.AttributeValue, len(scopes)),
+		},
+	}
+	for i, scope := range scopes {
+		items["oauth_scope"].Keys[i] = map[string]*dynamodb.AttributeValue{
+			"id": {
+				S: aws.String(scope),
+			},
+		}
+	}
+
+	res, err := s.db.BatchGetItem(&dynamodb.BatchGetItemInput{
+		RequestItems: items,
+	})
+
+	if _, ok := res.Responses["oauth_scope"]; ok && len(res.Responses["oauth_scope"]) == len(scopes) {
+		return true, nil
+	}
+
+	return false, err
 }
 
 func (s *DynamoDB) RevokeRefreshToken(refreshToken string) error {
-	return nil
+	_, err := s.db.DeleteItem(&dynamodb.DeleteItemInput{
+		TableName: aws.String("oauth_refreshtoken"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"rt": {
+				S: aws.String(refreshToken),
+			},
+		},
+	})
+
+	return err
 }
 
 func (s *DynamoDB) RevokeAccessToken(accessToken string) error {
-	return nil
+	_, err := s.db.DeleteItem(&dynamodb.DeleteItemInput{
+		TableName: aws.String("oauth_accesstoken"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"at": {
+				S: aws.String(accessToken),
+			},
+		},
+	})
+
+	return err
 }
