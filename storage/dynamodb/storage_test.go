@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/plimble/clover/oauth2"
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +20,41 @@ func setup() *DynamoDB {
 	}
 
 	return db
+}
+
+func TestCRUDClient(t *testing.T) {
+	setup()
+	expc := &oauth2.Client{
+		ID:     "c1",
+		Name:   "client",
+		Secret: "secret",
+	}
+
+	data, err := dynamodbattribute.MarshalMap(expc)
+	require.NoError(t, err)
+
+	_, err = db.db.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String("oauth_client"),
+		Item:      data,
+	})
+
+	c, err := db.GetClientWithSecret(expc.ID, expc.Secret)
+	require.NoError(t, err)
+	require.Equal(t, expc, c)
+
+	_, err = db.db.DeleteItem(&dynamodb.DeleteItemInput{
+		TableName: aws.String("oauth_client"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"c": {
+				S: aws.String(c.ID),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	c, err = db.GetClientWithSecret(c.ID, c.Secret)
+	require.Equal(t, oauth2.DbNotFoundError(nil), err)
+	require.Nil(t, c)
 }
 
 func TestCRUDAccessToken(t *testing.T) {

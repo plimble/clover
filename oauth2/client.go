@@ -2,13 +2,13 @@ package oauth2
 
 type Client struct {
 	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Secret       string   `json:"secret"`
-	RedirectURIs []string `json:"redirect_uris"`
-	GrantTypes   []string `json:"grant_types"`
-	Scopes       []string `json:"scopes"`
-	Public       bool     `json:"public"`
-	CreatedAt    string   `json:"created_at"`
+	Name         string   `json:"n"`
+	Secret       string   `json:"s"`
+	RedirectURIs []string `json:"rdr"`
+	GrantTypes   []string `json:"gt"`
+	Scopes       []string `json:"scp"`
+	Public       bool     `json:"pub"`
+	CreatedAt    string   `json:"cat"`
 }
 
 func (c *Client) IsGrantType(grant string) bool {
