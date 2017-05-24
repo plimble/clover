@@ -42,10 +42,14 @@ func TestCRUDClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expc, c)
 
+	c, err = db.GetClient(expc.ID)
+	require.NoError(t, err)
+	require.Equal(t, expc, c)
+
 	_, err = db.db.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String("oauth_client"),
 		Key: map[string]*dynamodb.AttributeValue{
-			"c": {
+			"id": {
 				S: aws.String(c.ID),
 			},
 		},
@@ -55,6 +59,7 @@ func TestCRUDClient(t *testing.T) {
 	c, err = db.GetClientWithSecret(c.ID, c.Secret)
 	require.Equal(t, oauth2.DbNotFoundError(nil), err)
 	require.Nil(t, c)
+
 }
 
 func TestCRUDAccessToken(t *testing.T) {

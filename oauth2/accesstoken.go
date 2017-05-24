@@ -15,3 +15,13 @@ type AccessToken struct {
 func (a *AccessToken) Valid() bool {
 	return a != nil && a.AccessToken != "" && time.Now().UTC().Unix() > a.Expired
 }
+
+func (a *AccessToken) HasScope(scopes ...string) bool {
+	for _, scope := range scopes {
+		if ok := HierarchicScope(scope, a.Scopes); !ok {
+			return false
+		}
+	}
+
+	return true
+}

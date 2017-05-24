@@ -31,15 +31,12 @@ func New(id, secret, region string) (*DynamoDB, error) {
 	return &DynamoDB{dynamodb.New(sess), cache}, nil
 }
 
-func (s *DynamoDB) GetClientWithSecret(id, secret string) (*oauth2.Client, error) {
+func (s *DynamoDB) GetClient(id string) (*oauth2.Client, error) {
 	res, err := s.db.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String("oauth_client"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"id": {
 				S: aws.String(id),
-			},
-			"s": {
-				S: aws.String(secret),
 			},
 		},
 	})
@@ -56,6 +53,19 @@ func (s *DynamoDB) GetClientWithSecret(id, secret string) (*oauth2.Client, error
 	err = dynamodbattribute.UnmarshalMap(res.Item, c)
 
 	return c, err
+}
+
+func (s *DynamoDB) GetClientWithSecret(id, secret string) (*oauth2.Client, error) {
+	client, err := s.GetClient(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if client.Secret != secret {
+		return nil, oauth2.DbNotFoundError(err)
+	}
+
+	return client, nil
 }
 
 func (s *DynamoDB) GetRefreshToken(refreshToken string) (*oauth2.RefreshToken, error) {

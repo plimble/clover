@@ -50,6 +50,7 @@ func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (st
 		"iat":        now.Unix(),
 		"token_type": "bearer",
 		"scope":      strings.Join(req.Scopes, " "),
+		"extra":      req.Extras,
 	})
 
 	return token.SignedString(c.privateKey)
@@ -81,4 +82,60 @@ func (c *JWTTokenGenerator) CreateCode() string {
 
 func (c *JWTTokenGenerator) CreateRefreshToken() string {
 	return uuid.NewV4().String()
+}
+
+type JWTAccessToken struct {
+	Audience  string
+	ExpiresAt int64
+	ID        string
+	IssuedAt  int64
+	Issuer    string
+	Subject   string
+	Extra     map[string]interface{}
+	Scopes    []string
+}
+
+func (a *JWTAccessToken) Valid() bool {
+	return a != nil && time.Now().UTC().Unix() > a.ExpiresAt
+}
+
+func (a *JWTAccessToken) HasScope(scopes ...string) bool {
+	for _, scope := range scopes {
+		if ok := HierarchicScope(scope, a.Scopes); !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func ClaimJWTAccessToken(publicKey *rsa.PublicKey, accesstoken string) (*JWTAccessToken, error) {
+	jwttoken, err := jwt.Parse(accesstoken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return publicKey, nil
+	})
+	if err != nil || !jwttoken.Valid {
+		return nil, errors.New("Invalid token")
+	}
+
+	claims, ok := jwttoken.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("Invalid jwt")
+	}
+
+	at := &JWTAccessToken{
+		Audience:  claims["aud"].(string),
+		ExpiresAt: claims["exp"].(int64),
+		ID:        claims["jti"].(string),
+		IssuedAt:  claims["iat"].(int64),
+		Issuer:    claims["iss"].(string),
+		Subject:   claims["sub"].(string),
+		Extra:     claims["extra"].(map[string]interface{}),
+		Scopes:    strings.Fields(claims["scope"].(string)),
+	}
+
+	return at, nil
 }

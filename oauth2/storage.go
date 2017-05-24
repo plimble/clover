@@ -1,6 +1,7 @@
 package oauth2
 
 type Storage interface {
+	GetClient(id string) (*Client, error)
 	GetClientWithSecret(id, secret string) (*Client, error)
 	GetRefreshToken(refreshToken string) (*RefreshToken, error)
 	GetAuthorizeCode(code string) (*AuthorizeCode, error)

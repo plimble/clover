@@ -3,6 +3,8 @@ package memory
 import (
 	"errors"
 
+	"sync"
+
 	"github.com/plimble/clover/oauth2"
 )
 
@@ -16,40 +18,63 @@ var (
 )
 
 type MemoryStorage struct {
-	client        map[string]*oauth2.Client
-	scope         map[string]*Scope
-	accessToken   map[string]*oauth2.AccessToken
-	refreshToken  map[string]*oauth2.RefreshToken
-	authCodeToken map[string]*oauth2.AuthorizeCode
+	ClientMutex        sync.Mutex
+	ScopeMutex         sync.Mutex
+	AccessTokenMutex   sync.Mutex
+	RefreshTokenMutex  sync.Mutex
+	AuthorizeCodeMutex sync.Mutex
+	Client             map[string]*oauth2.Client
+	Scope              map[string]*Scope
+	AccessToken        map[string]*oauth2.AccessToken
+	RefreshToken       map[string]*oauth2.RefreshToken
+	AuthorizeCode      map[string]*oauth2.AuthorizeCode
 }
 
 func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{}
+	return &MemoryStorage{
+		Client:        make(map[string]*oauth2.Client),
+		Scope:         make(map[string]*Scope),
+		AccessToken:   make(map[string]*oauth2.AccessToken),
+		RefreshToken:  make(map[string]*oauth2.RefreshToken),
+		AuthorizeCode: make(map[string]*oauth2.AuthorizeCode),
+	}
 }
 
 func (s *MemoryStorage) Flush() {
-	s.client = make(map[string]*oauth2.Client)
-	s.client = make(map[string]*oauth2.Client)
+	s.Client = make(map[string]*oauth2.Client)
+	s.Scope = make(map[string]*Scope)
+	s.AccessToken = make(map[string]*oauth2.AccessToken)
+	s.RefreshToken = make(map[string]*oauth2.RefreshToken)
+	s.AuthorizeCode = make(map[string]*oauth2.AuthorizeCode)
 }
 
 func (s *MemoryStorage) RevokeAccessToken(token string) error {
-	_, ok := s.accessToken[token]
+	s.AccessTokenMutex.Lock()
+	defer s.AccessTokenMutex.Unlock()
+
+	_, ok := s.AccessToken[token]
 	if !ok {
 		return errNotFound
 	}
 
-	delete(s.accessToken, token)
+	delete(s.AccessToken, token)
 
 	return nil
 }
 
 func (s *MemoryStorage) SaveAccessToken(accessToken *oauth2.AccessToken) error {
-	s.accessToken[accessToken.AccessToken] = accessToken
+	s.AccessTokenMutex.Lock()
+	defer s.AccessTokenMutex.Unlock()
+
+	s.AccessToken[accessToken.AccessToken] = accessToken
 	return nil
 }
 
 func (s *MemoryStorage) GetAccessToken(token string) (*oauth2.AccessToken, error) {
-	accessToken, ok := s.accessToken[token]
+	s.AccessTokenMutex.Lock()
+	defer s.AccessTokenMutex.Unlock()
+
+	accessToken, ok := s.AccessToken[token]
 	if !ok {
 		return nil, errNotFound
 	}
@@ -58,23 +83,32 @@ func (s *MemoryStorage) GetAccessToken(token string) (*oauth2.AccessToken, error
 }
 
 func (s *MemoryStorage) RevokeRefreshToken(token string) error {
-	_, ok := s.refreshToken[token]
+	s.RefreshTokenMutex.Lock()
+	defer s.RefreshTokenMutex.Unlock()
+
+	_, ok := s.RefreshToken[token]
 	if !ok {
 		return errNotFound
 	}
 
-	delete(s.refreshToken, token)
+	delete(s.RefreshToken, token)
 
 	return nil
 }
 
 func (s *MemoryStorage) SaveRefreshToken(refreshToken *oauth2.RefreshToken) error {
-	s.refreshToken[refreshToken.RefreshToken] = refreshToken
+	s.RefreshTokenMutex.Lock()
+	defer s.RefreshTokenMutex.Unlock()
+
+	s.RefreshToken[refreshToken.RefreshToken] = refreshToken
 	return nil
 }
 
 func (s *MemoryStorage) GetRefreshToken(token string) (*oauth2.RefreshToken, error) {
-	refreshToken, ok := s.refreshToken[token]
+	s.RefreshTokenMutex.Lock()
+	defer s.RefreshTokenMutex.Unlock()
+
+	refreshToken, ok := s.RefreshToken[token]
 	if !ok {
 		return nil, errNotFound
 	}
@@ -82,24 +116,19 @@ func (s *MemoryStorage) GetRefreshToken(token string) (*oauth2.RefreshToken, err
 	return refreshToken, nil
 }
 
-func (s *MemoryStorage) RevokeAuthorizeCode(code string) error {
-	_, ok := s.authCodeToken[code]
-	if !ok {
-		return errNotFound
-	}
-
-	delete(s.authCodeToken, code)
-
-	return nil
-}
-
 func (s *MemoryStorage) SaveAuthorizeCode(authCode *oauth2.AuthorizeCode) error {
-	s.authCodeToken[authCode.Code] = authCode
+	s.AuthorizeCodeMutex.Lock()
+	defer s.AuthorizeCodeMutex.Unlock()
+
+	s.AuthorizeCode[authCode.Code] = authCode
 	return nil
 }
 
 func (s *MemoryStorage) GetAuthorizeCode(code string) (*oauth2.AuthorizeCode, error) {
-	authCode, ok := s.authCodeToken[code]
+	s.AuthorizeCodeMutex.Lock()
+	defer s.AuthorizeCodeMutex.Unlock()
+
+	authCode, ok := s.AuthorizeCode[code]
 	if !ok {
 		return nil, errNotFound
 	}
@@ -107,24 +136,11 @@ func (s *MemoryStorage) GetAuthorizeCode(code string) (*oauth2.AuthorizeCode, er
 	return authCode, nil
 }
 
-func (s *MemoryStorage) DeleteClient(id string) error {
-	_, ok := s.client[id]
-	if !ok {
-		return errNotFound
-	}
-
-	delete(s.client, id)
-
-	return nil
-}
-
-func (s *MemoryStorage) SaveClient(client *oauth2.Client) error {
-	s.client[client.ID] = client
-	return nil
-}
-
 func (s *MemoryStorage) GetClientWithSecret(id, secret string) (*oauth2.Client, error) {
-	client, ok := s.client[id]
+	s.ClientMutex.Lock()
+	defer s.ClientMutex.Unlock()
+
+	client, ok := s.Client[id]
 	if !ok {
 		return nil, errNotFound
 	}
@@ -137,7 +153,10 @@ func (s *MemoryStorage) GetClientWithSecret(id, secret string) (*oauth2.Client, 
 }
 
 func (s *MemoryStorage) GetClient(id string) (*oauth2.Client, error) {
-	client, ok := s.client[id]
+	s.ClientMutex.Lock()
+	defer s.ClientMutex.Unlock()
+
+	client, ok := s.Client[id]
 	if !ok {
 		return nil, errNotFound
 	}
@@ -145,49 +164,12 @@ func (s *MemoryStorage) GetClient(id string) (*oauth2.Client, error) {
 	return client, nil
 }
 
-func (s *MemoryStorage) CreateScope(scope *Scope) error {
-	s.scope[scope.ID] = scope
-	return nil
-}
-
-func (s *MemoryStorage) GetScopeByIDs(ids []string) ([]*Scope, error) {
-	scopes := []*Scope{}
-
-	for _, id := range ids {
-		scope, ok := s.scope[id]
-		if ok {
-			scopes = append(scopes, scope)
-		}
-	}
-
-	return scopes, nil
-}
-
-func (s *MemoryStorage) DeleteScope(id string) error {
-	_, ok := s.scope[id]
-	if !ok {
-		return errNotFound
-	}
-
-	delete(s.scope, id)
-
-	return nil
-}
-
-func (s *MemoryStorage) GetAllScope() ([]*Scope, error) {
-	scopes := make([]*Scope, len(s.scope))
-	index := 0
-	for _, scope := range s.scope {
-		scopes[index] = scope
-		index++
-	}
-
-	return scopes, nil
-}
-
 func (s *MemoryStorage) IsAvailableScope(scopes []string) (bool, error) {
+	s.ScopeMutex.Lock()
+	defer s.ScopeMutex.Unlock()
+
 	for _, scope := range scopes {
-		if _, ok := s.scope[scope]; !ok {
+		if _, ok := s.Scope[scope]; !ok {
 			return false, nil
 		}
 	}
