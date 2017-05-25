@@ -56,57 +56,12 @@ func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (st
 	return token.SignedString(c.privateKey)
 }
 
-func (c *JWTTokenGenerator) Validate(token string) (jwt.MapClaims, error) {
-	jwttoken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return &c.privateKey.PublicKey, nil
-	})
-	if err != nil || !jwttoken.Valid {
-		return nil, errors.New("Invalid token")
-	}
-
-	claims, ok := jwttoken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("Invalid jwt")
-	}
-
-	return claims, nil
-}
-
 func (c *JWTTokenGenerator) CreateCode() string {
 	return uuid.NewV4().String()
 }
 
 func (c *JWTTokenGenerator) CreateRefreshToken() string {
 	return uuid.NewV4().String()
-}
-
-type JWTAccessToken struct {
-	Audience  string
-	ExpiresAt int64
-	ID        string
-	IssuedAt  int64
-	Issuer    string
-	Subject   string
-	Extra     map[string]interface{}
-	Scopes    []string
-}
-
-func (a *JWTAccessToken) Valid() bool {
-	return a != nil && time.Now().UTC().Unix() > a.ExpiresAt
-}
-
-func (a *JWTAccessToken) HasScope(scopes ...string) bool {
-	for _, scope := range scopes {
-		if ok := HierarchicScope(scope, a.Scopes); !ok {
-			return false
-		}
-	}
-
-	return true
 }
 
 func ClaimJWTAccessToken(publicKey *rsa.PublicKey, accesstoken string) (*JWTAccessToken, error) {
@@ -128,13 +83,16 @@ func ClaimJWTAccessToken(publicKey *rsa.PublicKey, accesstoken string) (*JWTAcce
 
 	at := &JWTAccessToken{
 		Audience:  claims["aud"].(string),
-		ExpiresAt: claims["exp"].(int64),
+		ExpiresAt: int64(claims["exp"].(float64)),
 		ID:        claims["jti"].(string),
-		IssuedAt:  claims["iat"].(int64),
+		IssuedAt:  int64(claims["iat"].(float64)),
 		Issuer:    claims["iss"].(string),
 		Subject:   claims["sub"].(string),
-		Extra:     claims["extra"].(map[string]interface{}),
 		Scopes:    strings.Fields(claims["scope"].(string)),
+	}
+
+	if extras, ok := claims["extra"].(map[string]interface{}); ok {
+		at.Extras = extras
 	}
 
 	return at, nil
