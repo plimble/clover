@@ -27,6 +27,10 @@ type TokenHandler struct {
 	*zap.Logger
 }
 
+func (h *TokenHandler) RegisterGrantType(grantType GrantType) {
+	h.GrantTypes[grantType.Name()] = grantType
+}
+
 func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		oauth2.WriteJsonError(w, ErrNotPostMethod)
