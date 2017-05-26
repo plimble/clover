@@ -1,65 +1,57 @@
 package oauth2
 
 import (
-	"fmt"
-
 	"go.uber.org/zap/zapcore"
 )
 
 type AppErr struct {
-	Message string `json:"message"`
+	Message string `json:"error_description"`
 	status  int
 	Code    string `json:"error"`
 	cause   error
 }
 
-func Error(status int, errCode, msg string) *AppErr {
-	return &AppErr{msg, status, errCode, nil}
+func Error(message string, status int, code string, cause error) *AppErr {
+	return &AppErr{message, status, code, cause}
 }
 
-func Errorf(status int, errCode, format string, v ...interface{}) *AppErr {
-	return Error(status, errCode, fmt.Sprintf(format, v...))
+func InvalidClient(message string) *AppErr {
+	return &AppErr{message, 401, "invalid_client", nil}
 }
 
-func UnknownError() *AppErr {
-	return &AppErr{"unknown error", 500, "unknown", nil}
+func ServerError(message string, cause error) *AppErr {
+	return &AppErr{message, 500, "server_error", cause}
 }
 
-func DbNotFoundError(err error) *AppErr {
-	return &AppErr{"db not found", 404, "not_found", err}
+func UnknownError(cause error) *AppErr {
+	return &AppErr{"unknown error", 500, "server_error", cause}
+}
+
+func DataNotFoundError(err error) *AppErr {
+	return &AppErr{"data not found", 404, "data_not_found", err}
 }
 
 func (e *AppErr) Error() string { return e.Message }
 func (e *AppErr) Cause() error  { return e.cause }
 func (e *AppErr) WithCause(err error) *AppErr {
-	return &AppErr{e.Message, e.status, e.Code, err}
+	e.cause = err
+	return e
 }
 
 func (e *AppErr) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("error_code", e.Code)
 	enc.AddString("error_message", e.Message)
-	if cause := ErrorCause(e); cause != nil {
-		enc.AddString("error_cause", cause.Error())
+	if e.cause != nil {
+		enc.AddString("error_cause", e.cause.Error())
 	}
 
 	return nil
 }
 
-func ErrorCause(err error) error {
-	type causer interface {
-		Cause() error
+func IsNotFound(err error) bool {
+	switch t := err.(type) {
+	case *AppErr:
+		return t.status == 404
 	}
-
-	for err != nil {
-		c, ok := err.(causer)
-		if !ok {
-			break
-		}
-		cause := c.Cause()
-		if cause == nil {
-			break
-		}
-		err = cause
-	}
-	return err
+	return false
 }

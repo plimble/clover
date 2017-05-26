@@ -4,17 +4,15 @@ import (
 	"time"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
 type ClientCredentialsGrantType struct {
 	AccessTokenLifespan int
-	*zap.Logger
 }
 
 func (g *ClientCredentialsGrantType) GrantRequest(req *TokenHandlerRequest, client *oauth2.Client, storage oauth2.Storage) (*GrantData, error) {
 	if client.Public {
-		return nil, ErrClientCredentialPublic
+		return nil, InvalidClient("public client is not allowed for client_credential grant type")
 	}
 
 	return &GrantData{
@@ -36,11 +34,6 @@ func (g *ClientCredentialsGrantType) CreateToken(grantData *GrantData, client *o
 		Extras:    grantData.Extras,
 	})
 	if err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot create accesstoken",
-			zap.NamedError("cause", err),
-			zap.Any("error", err),
-		)
 		return "", "", err
 	}
 
@@ -54,11 +47,6 @@ func (g *ClientCredentialsGrantType) CreateToken(grantData *GrantData, client *o
 	}
 
 	if err = storage.SaveAccessToken(at); err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("AccessToken", at),
-			zap.Any("error", err),
-		)
 		return "", "", err
 	}
 

@@ -1,7 +1,7 @@
 package: github.com/plimble/clover
 import:
 - package: github.com/aws/aws-sdk-go
-  version: v1.8.27
+  version: v1.8.30
   subpackages:
   - aws
   - aws/credentials
@@ -14,12 +14,11 @@ import:
   version: v2.0.0
 - package: github.com/satori/go.uuid
   version: v1.1.0
+- package: github.com/stretchr/testify
+  version: v1.1.4
+  subpackages:
+  - mock
 - package: go.uber.org/zap
   version: v1.4.0
   subpackages:
   - zapcore
-testImport:
-- package: github.com/stretchr/testify
-  version: v1.1.4
-  subpackages:
-  - require

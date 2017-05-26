@@ -12,20 +12,23 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 type JWTTokenGenerator struct {
 	privateKey *rsa.PrivateKey
-	issuer     string
+	logger     *zap.Logger
 }
 
-func NewJWTTokenGenerator(privateKey *rsa.PrivateKey, issuer string) *JWTTokenGenerator {
-	return &JWTTokenGenerator{privateKey, issuer}
+func NewJWTTokenGenerator(privateKey *rsa.PrivateKey, logger *zap.Logger) *JWTTokenGenerator {
+	return &JWTTokenGenerator{privateKey, logger}
 }
 
 func (c *JWTTokenGenerator) genrateID() (string, error) {
 	bytes := make([]byte, 10)
 	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
+		c.logger.Error("unable to generate jwt id", zap.Error(err))
+
 		return "", err
 	}
 
@@ -35,14 +38,13 @@ func (c *JWTTokenGenerator) genrateID() (string, error) {
 func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (string, error) {
 	id, err := c.genrateID()
 	if err != nil {
-		return "", err
+		return "", ServerError("unable to generate jwt id", err)
 	}
 
 	now := time.Now().UTC()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"jti":        id,
-		"iss":        c.issuer,
 		"aud":        req.ClientID,
 		"sub":        req.UserID,
 		"exp":        now.Add(time.Second * time.Duration(req.ExpiresIn)).Unix(),
@@ -52,7 +54,12 @@ func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (st
 		"extra":      req.Extras,
 	})
 
-	return token.SignedString(c.privateKey)
+	atoken, err := token.SignedString(c.privateKey)
+	if err != nil {
+		c.logger.Error("could not signed jwt string", zap.Error(err))
+		return "", ServerError("could not signed jwt string", err)
+	}
+	return atoken, nil
 }
 
 func (c *JWTTokenGenerator) CreateCode() string {
@@ -75,17 +82,13 @@ func ClaimJWTAccessToken(publicKey *rsa.PublicKey, accesstoken string) (*JWTAcce
 		return nil, errors.New("Invalid token")
 	}
 
-	claims, ok := jwttoken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("Invalid jwt")
-	}
+	claims := jwttoken.Claims.(jwt.MapClaims)
 
 	at := &JWTAccessToken{
 		Audience:  claims["aud"].(string),
 		ExpiresAt: int64(claims["exp"].(float64)),
 		ID:        claims["jti"].(string),
 		IssuedAt:  int64(claims["iat"].(float64)),
-		Issuer:    claims["iss"].(string),
 		Subject:   claims["sub"].(string),
 		Scopes:    strings.Fields(claims["scope"].(string)),
 	}

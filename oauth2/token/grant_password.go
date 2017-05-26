@@ -4,30 +4,27 @@ import (
 	"time"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
 type PassowrdGrantType struct {
 	UserService          oauth2.UserService
 	AccessTokenLifespan  int
 	RefreshTokenLifespan int
-	*zap.Logger
 }
 
 func (g *PassowrdGrantType) GrantRequest(req *TokenHandlerRequest, client *oauth2.Client, storage oauth2.Storage) (*GrantData, error) {
 	username := req.Form.Get("username")
 	password := req.Form.Get("password")
 	if username == "" || password == "" {
-		return nil, ErrUsernamePasswordRequired
+		return nil, InvalidRequest("username and password is required")
 	}
 
 	user, err := g.UserService.GetUser(username, password)
 	if err != nil {
-		err = ErrInvalidUser.WithCause(err)
-		g.Error("get user",
-			zap.String("username", username),
-			zap.Any("error", err),
-		)
+		if oauth2.IsNotFound(err) {
+			return nil, InvalidRequest("username or password is invalid")
+		}
+
 		return nil, err
 	}
 
@@ -74,11 +71,6 @@ func (g *PassowrdGrantType) createAccessToken(grantData *GrantData, client *oaut
 		Extras:    grantData.Extras,
 	})
 	if err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot create accesstoken",
-			zap.NamedError("cause", err),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -92,11 +84,6 @@ func (g *PassowrdGrantType) createAccessToken(grantData *GrantData, client *oaut
 	}
 
 	if err = storage.SaveAccessToken(at); err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("AccessToken", at),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -115,11 +102,6 @@ func (g *PassowrdGrantType) createRefreshToken(grantData *GrantData, client *oau
 	}
 
 	if err := storage.SaveRefreshToken(rt); err != nil {
-		err = ErrUnableCreateRefreshToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("RefreshToken", rt),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 

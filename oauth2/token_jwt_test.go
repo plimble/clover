@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestCreateJWTAccessToken(t *testing.T) {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 1024)
 
-	gen := &JWTTokenGenerator{
-		privateKey: privateKey,
-		issuer:     "tester",
-	}
+	gen := NewJWTTokenGenerator(privateKey, zap.L())
 
 	token, err := gen.CreateAccessToken(&CreateAccessTokenRequest{
 		ClientID:  "c1",
@@ -41,18 +39,14 @@ func TestCreateJWTAccessToken(t *testing.T) {
 }
 
 func TestJWTTokenGeneratorCreateAuthorizeCode(t *testing.T) {
-	gen := &JWTTokenGenerator{
-		issuer: "tester",
-	}
+	gen := NewJWTTokenGenerator(nil, zap.L())
 
 	code := gen.CreateCode()
 	require.NotEmpty(t, code)
 }
 
 func TestJWTTokenGeneratorCreateRefreshToken(t *testing.T) {
-	gen := &JWTTokenGenerator{
-		issuer: "tester",
-	}
+	gen := NewJWTTokenGenerator(nil, zap.L())
 
 	token := gen.CreateRefreshToken()
 	require.NotEmpty(t, token)

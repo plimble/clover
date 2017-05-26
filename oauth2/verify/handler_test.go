@@ -1,42 +1,35 @@
 package verify
 
 import (
-	"net/http"
+	"encoding/json"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/plimble/clover/oauth2"
-	"github.com/plimble/clover/storage/memory"
-	"gopkg.in/gavv/httpexpect.v1"
+	"github.com/plimble/clover/oauth2/mocks"
+	"github.com/stretchr/testify/require"
 )
 
-type VerifyHandlerTest struct {
-	storage *memory.MemoryStorage
-	*httpexpect.Expect
-}
-
 func TestVerifyHandler(t *testing.T) {
-	ht := &VerifyHandlerTest{
-		storage: memory.NewMemoryStorage(),
-	}
-	h := &VerifyHandler{Logger: zap.L(), Storage: ht.storage}
-
-	config := httpexpect.Config{
-		BaseURL: "http://localhost",
-		Client: &http.Client{
-			Transport: httpexpect.NewBinder(h),
-			Jar:       httpexpect.NewJar(),
-		},
-		Reporter: httpexpect.NewAssertReporter(t),
-	}
-	ht.Expect = httpexpect.WithConfig(config)
-
-	t.Run("ValidAccessToken", ht.ValidAccessToken)
+	t.Run("ValidAccessToken", ValidAccessToken)
+	t.Run("InValidAccessToken", InValidAccessToken)
 }
 
-func (ht *VerifyHandlerTest) ValidAccessToken(t *testing.T) {
+func ValidAccessToken(t *testing.T) {
+	storage := &mocks.Storage{}
+	h := New(storage, zap.L())
+	res := httptest.NewRecorder()
+
+	form := make(url.Values)
+	form.Set("scope", "s1 s2")
+	req := httptest.NewRequest("POST", "/", strings.NewReader(form.Encode()))
+	req.Header.Set("Authorization", "bearer a123456")
+
 	at := &oauth2.AccessToken{
 		AccessToken: "a123456",
 		ClientID:    "c1",
@@ -50,12 +43,41 @@ func (ht *VerifyHandlerTest) ValidAccessToken(t *testing.T) {
 		},
 	}
 
-	ht.storage.AccessToken["a123456"] = at
+	storage.On("GetAccessToken", "a123456").Return(at, nil)
 
-	ht.POST("/verify").
-		WithHeader("Authorization", "bearer a123456").
-		WithFormField("scope", "s1 s2").
-		Expect().
-		Status(200).
-		Body().Equal("")
+	h.ServeHTTP(res, req)
+
+	require.Equal(t, 200, res.Code)
+	require.Equal(t, "", res.Body.String())
+	storage.AssertExpectations(t)
+}
+
+func InValidAccessToken(t *testing.T) {
+	storage := &mocks.Storage{}
+	h := New(storage, zap.L())
+	res := httptest.NewRecorder()
+
+	form := make(url.Values)
+	form.Set("scope", "s1 s2")
+	req := httptest.NewRequest("POST", "/", strings.NewReader(form.Encode()))
+	req.Header.Set("Authorization", "bearer a123456")
+
+	storage.On("GetAccessToken", "a123456").Return(nil, InvalidAccessToken("not found"))
+
+	h.ServeHTTP(res, req)
+
+	exp := map[string]interface{}{
+		"error":             "invalid_accesstoken",
+		"error_description": "not found",
+	}
+
+	resJson := make(map[string]interface{})
+	err := json.NewDecoder(res.Body).Decode(&resJson)
+	require.NoError(t, err)
+
+	require.NoError(t, err)
+	require.Equal(t, 400, res.Code)
+	require.Equal(t, "application/json", res.Header().Get("Content-Type"))
+	require.Equal(t, exp, resJson)
+	storage.AssertExpectations(t)
 }

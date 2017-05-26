@@ -1,13 +1,19 @@
 package verify
 
-import (
-	"github.com/plimble/clover/oauth2"
-)
+import "github.com/plimble/clover/oauth2"
 
-var (
-	ErrNotPostMethod        = oauth2.Error(400, "invalid_request", "The request method must be POST when requesting an access token")
-	ErrParseForm            = oauth2.Error(400, "invalid_request", "unable to parse form")
-	ErrUnableGetAccessToken = oauth2.Error(500, "get_accesstoken", "unable to get accesstoken")
-	ErrInvalidAccessToken   = oauth2.Error(500, "invalid_accesstoken", "invalid accesstoken")
-	ErrInvalidScope         = oauth2.Error(500, "invalid_scope", "invalid scope")
-)
+// InvalidRequest The request is missing a required parameter, includes an
+// unsupported parameter value
+func InvalidRequest(message string) *oauth2.AppErr {
+	return oauth2.Error(message, 400, "invalid_request", nil)
+}
+
+// InvalidAccessToken The request send an invalid access token or expired
+func InvalidAccessToken(message string) *oauth2.AppErr {
+	return oauth2.Error(message, 400, "invalid_accesstoken", nil)
+}
+
+// InvalidScope The requested scope is not allowed
+func InvalidScope(message string) *oauth2.AppErr {
+	return oauth2.Error(message, 401, "invalid_scope", nil)
+}

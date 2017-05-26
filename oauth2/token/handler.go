@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 
+	"fmt"
+
 	"github.com/plimble/clover/oauth2"
 	"go.uber.org/zap"
 )
@@ -21,19 +23,23 @@ type TokenHandlerRequest struct {
 type TokenHandlerResponse map[string]interface{}
 
 type TokenHandler struct {
-	GrantTypes     map[string]GrantType
+	grantTypes     map[string]GrantType
 	Storage        oauth2.Storage
 	TokenGenerator oauth2.TokenGenerator
-	*zap.Logger
+	logger         *zap.Logger
+}
+
+func New(storage oauth2.Storage, tokenGen oauth2.TokenGenerator, logger *zap.Logger) *TokenHandler {
+	return &TokenHandler{make(map[string]GrantType), storage, tokenGen, logger}
 }
 
 func (h *TokenHandler) RegisterGrantType(grantType GrantType) {
-	h.GrantTypes[grantType.Name()] = grantType
+	h.grantTypes[grantType.Name()] = grantType
 }
 
 func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		oauth2.WriteJsonError(w, ErrNotPostMethod)
+		oauth2.WriteJsonError(w, InvalidRequest("The request method must be POST"))
 		return
 	}
 
@@ -45,7 +51,7 @@ func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseForm(); err != nil {
-		oauth2.WriteJsonError(w, ErrParseForm)
+		oauth2.WriteJsonError(w, InvalidRequest("unable to parse form"))
 		return
 	}
 
@@ -57,10 +63,10 @@ func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.RequestToken(req)
-	h.Logger.Info("RequestToken",
+	h.logger.Info("RequestToken",
 		zap.Any("TokenHandlerRequest", req),
 		zap.Any("TokenHandlerResponse", res),
-		zap.Error(err),
+		zap.Any("error", err),
 	)
 	if err != nil {
 		oauth2.WriteJsonError(w, err)
@@ -97,12 +103,12 @@ func (h *TokenHandler) RequestToken(req *TokenHandlerRequest) (TokenHandlerRespo
 
 func (h *TokenHandler) getGrant(req *TokenHandlerRequest) (GrantType, error) {
 	if req.GrantType == "" {
-		return nil, ErrGrantTypeRequired
+		return nil, InvalidRequest("Missing parameters: grant_type required")
 	}
 
-	grant, ok := h.GrantTypes[req.GrantType]
+	grant, ok := h.grantTypes[req.GrantType]
 	if !ok {
-		return nil, ErrGrantTypeUnSupported
+		return nil, UnsupportedGrantType(fmt.Sprintf("server is not supported %s grant type", req.GrantType))
 	}
 
 	return grant, nil
@@ -111,18 +117,15 @@ func (h *TokenHandler) getGrant(req *TokenHandlerRequest) (GrantType, error) {
 func (h *TokenHandler) getClient(req *TokenHandlerRequest) (*oauth2.Client, error) {
 	client, err := h.Storage.GetClientWithSecret(req.ClientID, req.ClientSecret)
 	if err != nil {
-		err = ErrInvalidClient.WithCause(err)
-		h.Error("unable to get client",
-			zap.String("client_id", req.ClientID),
-			zap.String("client_secret", req.ClientSecret),
-			zap.Any("error", err),
-		)
+		if oauth2.IsNotFound(err) {
+			return nil, UnauthorizedClient("The authenticated client is not authorized")
+		}
 
 		return nil, err
 	}
 
 	if !client.HasGrantType(req.GrantType) {
-		return nil, ErrGrantIsNotAllowed
+		return nil, UnsupportedGrantType(fmt.Sprintf("client is not supported %s grant type", req.GrantType))
 	}
 
 	return client, nil
@@ -140,21 +143,15 @@ func (h *TokenHandler) checkScope(grantName string, grantScopes, clientScopes []
 
 	ok, err := h.Storage.IsAvailableScope(grantScopes)
 	if err != nil {
-		err = ErrUnableCheckScope.WithCause(err)
-		h.Error("unable get check scope from db",
-			zap.Strings("scopes", grantScopes),
-			zap.Any("error", err),
-		)
-
 		return err
 	}
 	if !ok {
-		return ErrScopeUnSupported
+		return InvalidScope("server is not supported your scope")
 	}
 
 	for _, scope := range grantScopes {
 		if !oauth2.HierarchicScope(scope, clientScopes) {
-			return ErrScopeNotAllowed
+			return InvalidScope("scope is not allowed")
 		}
 	}
 

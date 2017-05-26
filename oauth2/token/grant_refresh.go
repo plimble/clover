@@ -4,35 +4,30 @@ import (
 	"time"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
-type RefreshTokenGrantType struct {
-	*zap.Logger
-}
+type RefreshTokenGrantType struct{}
 
 func (g *RefreshTokenGrantType) GrantRequest(req *TokenHandlerRequest, client *oauth2.Client, storage oauth2.Storage) (*GrantData, error) {
 	rtoken := req.Form.Get("refresh_token")
 	if rtoken == "" {
-		return nil, ErrRefreshTokenRequired
+		return nil, InvalidRequest("refresh_token is required")
 	}
 
 	rt, err := storage.GetRefreshToken(rtoken)
 	if err != nil {
-		err = ErrUnableGetRefreshToken.WithCause(err)
-		g.Error("cannot get refreshtoken",
-			zap.String("refreshtoken", rtoken),
-			zap.Any("error", err),
-		)
+		if oauth2.IsNotFound(err) {
+			return nil, InvalidRequest("refresh_token is invalid")
+		}
 		return nil, err
 	}
 
 	if rt.ClientID != req.ClientID {
-		return nil, ErrClientIDMisMatched
+		return nil, InvalidRequest("client from refresh token is mismatched with Authorization header")
 	}
 
 	if !rt.Valid() {
-		return nil, ErrRefreshTokenExpired
+		return nil, InvalidRequest("refresh_token is expired")
 	}
 
 	return &GrantData{
@@ -64,12 +59,6 @@ func (g *RefreshTokenGrantType) CreateToken(grantData *GrantData, client *oauth2
 	}
 
 	if err = storage.RevokeRefreshToken(grantData.RefreshToken); err != nil {
-		err = ErrUnableRevokeRefreshToken.WithCause(err)
-		g.Error("cannot revoke refreshtoken",
-			zap.String("refreshtoken", rtoken),
-			zap.Any("error", err),
-		)
-
 		return "", "", err
 	}
 
@@ -84,11 +73,6 @@ func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *
 		Extras:    grantData.Extras,
 	})
 	if err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot create accesstoken",
-			zap.NamedError("cause", err),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -102,11 +86,6 @@ func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *
 	}
 
 	if err = storage.SaveAccessToken(at); err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("AccessToken", at),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -125,11 +104,6 @@ func (g *RefreshTokenGrantType) createRefreshToken(grantData *GrantData, client 
 	}
 
 	if err := storage.SaveRefreshToken(rt); err != nil {
-		err = ErrUnableCreateRefreshToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("RefreshToken", rt),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 

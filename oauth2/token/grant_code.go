@@ -4,47 +4,43 @@ import (
 	"time"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
 type AuthorizeCodeGrantType struct {
 	AccessTokenLifespan  int
 	RefreshTokenLifespan int
-	*zap.Logger
 }
 
 func (g *AuthorizeCodeGrantType) GrantRequest(req *TokenHandlerRequest, client *oauth2.Client, storage oauth2.Storage) (*GrantData, error) {
 	code := req.Form.Get("code")
 	if code == "" {
-		return nil, ErrCodeRequired
+		return nil, InvalidRequest("Missing parameters: code required")
 	}
 
 	redirect := req.Form.Get("redirect_uri")
 	if redirect == "" {
-		return nil, ErrRedirectRequired
+		return nil, InvalidRequest("Missing parameters: redirect_uri required")
 	}
 
 	authCode, err := storage.GetAuthorizeCode(code)
 	if err != nil {
-		err = ErrUnableGetAuthorizeCode.WithCause(err)
-		g.Error("GetAuthorizeCode",
-			zap.String("code", code),
-			zap.Any("error", err),
-		)
+		if oauth2.IsNotFound(err) {
+			return nil, InvalidRequest("authorize code is invalid")
+		}
 
 		return nil, err
 	}
 
 	if authCode.ClientID != req.ClientID {
-		return nil, ErrClientIDMisMatched
+		return nil, InvalidRequest("client from authorize code is mismatched with Authorization header")
 	}
 
 	if authCode.RedirectURI != redirect {
-		return nil, ErrRedirectMisMatched
+		return nil, InvalidRequest("redirect_uri from request is invalid")
 	}
 
 	if !authCode.Valid() {
-		return nil, ErrCodeExpired
+		return nil, InvalidRequest("code is expired")
 	}
 
 	return &GrantData{
@@ -85,11 +81,6 @@ func (g *AuthorizeCodeGrantType) createAccessToken(grantData *GrantData, client 
 		Extras:    grantData.Extras,
 	})
 	if err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot create accesstoken",
-			zap.NamedError("cause", err),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -103,11 +94,6 @@ func (g *AuthorizeCodeGrantType) createAccessToken(grantData *GrantData, client 
 	}
 
 	if err = storage.SaveAccessToken(at); err != nil {
-		err = ErrUnableCreateAccessToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("AccessToken", at),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 
@@ -126,11 +112,6 @@ func (g *AuthorizeCodeGrantType) createRefreshToken(grantData *GrantData, client
 	}
 
 	if err := storage.SaveRefreshToken(rt); err != nil {
-		err = ErrUnableCreateRefreshToken.WithCause(err)
-		g.Error("cannot save accesstoken",
-			zap.Any("RefreshToken", rt),
-			zap.Any("error", err),
-		)
 		return "", err
 	}
 

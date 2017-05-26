@@ -18,9 +18,13 @@ func WriteJson(w http.ResponseWriter, status int, v interface{}) {
 func WriteJsonError(w http.ResponseWriter, err error) error {
 	switch nerr := err.(type) {
 	case *AppErr:
+		if nerr.Code == "invalid_client" && nerr.status == 401 {
+			w.Header().Set("WWW-Authenticate", "Basic")
+		}
+
 		WriteJson(w, nerr.status, nerr)
 	default:
-		WriteJson(w, 500, UnknownError())
+		WriteJson(w, 500, UnknownError(err))
 	}
 
 	return err
