@@ -27,8 +27,8 @@ func UnknownError(cause error) *AppErr {
 	return &AppErr{"unknown error", 500, "server_error", cause}
 }
 
-func DataNotFoundError(err error) *AppErr {
-	return &AppErr{"data not found", 404, "data_not_found", err}
+func NotFound(err error) *AppErr {
+	return &AppErr{"not found", 404, "not_found", err}
 }
 
 func (e *AppErr) Error() string { return e.Message }

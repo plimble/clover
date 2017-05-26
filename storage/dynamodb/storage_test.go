@@ -3,22 +3,22 @@
 package dynamodb
 
 import (
-	"testing"
-
 	"os"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/plimble/clover/oauth2"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 var db *DynamoDB
 
 func setup() *DynamoDB {
 	if db == nil {
-		db, _ = New(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), os.Getenv("AWS_REGION"))
+		db, _ = New(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), os.Getenv("AWS_REGION"), zap.L())
 	}
 
 	return db
@@ -59,7 +59,7 @@ func TestCRUDClient(t *testing.T) {
 	require.NoError(t, err)
 
 	c, err = db.GetClientWithSecret(c.ID, c.Secret)
-	require.Equal(t, oauth2.DbNotFoundError(nil), err)
+	require.Equal(t, oauth2.NotFound(nil), err)
 	require.Nil(t, c)
 
 }
@@ -85,7 +85,7 @@ func TestCRUDAccessToken(t *testing.T) {
 	require.NoError(t, err)
 
 	at, err = db.GetAccessToken(at.AccessToken)
-	require.Equal(t, oauth2.DbNotFoundError(nil), err)
+	require.Equal(t, oauth2.NotFound(nil), err)
 	require.Nil(t, at)
 }
 
@@ -109,7 +109,7 @@ func TestCRUDRefreshToken(t *testing.T) {
 	require.NoError(t, err)
 
 	rt, err = db.GetRefreshToken(rt.RefreshToken)
-	require.Equal(t, oauth2.DbNotFoundError(nil), err)
+	require.Equal(t, oauth2.NotFound(nil), err)
 	require.Nil(t, rt)
 }
 
@@ -140,7 +140,7 @@ func TestCRUDAuthCode(t *testing.T) {
 	require.NoError(t, err)
 
 	c, err = db.GetAuthorizeCode(c.Code)
-	require.Equal(t, oauth2.DbNotFoundError(nil), err)
+	require.Equal(t, oauth2.NotFound(nil), err)
 	require.Nil(t, c)
 }
 
@@ -172,10 +172,10 @@ func TestIsAvailableScope(t *testing.T) {
 	})
 
 	ok, err := db.IsAvailableScope([]string{"s1", "s2"})
-	require.True(t, ok)
 	require.NoError(t, err)
+	require.True(t, ok)
 
 	ok, err = db.IsAvailableScope([]string{"s2", "s3"})
-	require.False(t, ok)
 	require.NoError(t, err)
+	require.False(t, ok)
 }
