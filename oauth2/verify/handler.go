@@ -14,12 +14,11 @@ type VerifyHandlerRequest struct {
 }
 
 type VerifyHandler struct {
-	logger  *zap.Logger
 	Storage oauth2.Storage
 }
 
-func New(storage oauth2.Storage, logger *zap.Logger) *VerifyHandler {
-	return &VerifyHandler{logger, storage}
+func New(storage oauth2.Storage) *VerifyHandler {
+	return &VerifyHandler{storage}
 }
 
 func (h *VerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +40,7 @@ func (h *VerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.Verify(req)
-	h.logger.Info("Verify AccessToken",
+	oauth2.Logger.Info("Verify AccessToken",
 		zap.Any("VerifyHandlerRequest", req),
 		zap.Any("error", err),
 	)

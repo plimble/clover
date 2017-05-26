@@ -1,8 +1,11 @@
 package oauth2
 
 import (
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var Logger = zap.NewNop()
 
 type AppErr struct {
 	Message string `json:"error_description"`

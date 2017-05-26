@@ -17,17 +17,16 @@ import (
 
 type JWTTokenGenerator struct {
 	privateKey *rsa.PrivateKey
-	logger     *zap.Logger
 }
 
-func NewJWTTokenGenerator(privateKey *rsa.PrivateKey, logger *zap.Logger) *JWTTokenGenerator {
-	return &JWTTokenGenerator{privateKey, logger}
+func NewJWTTokenGenerator(privateKey *rsa.PrivateKey) *JWTTokenGenerator {
+	return &JWTTokenGenerator{privateKey}
 }
 
 func (c *JWTTokenGenerator) genrateID() (string, error) {
 	bytes := make([]byte, 10)
 	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
-		c.logger.Error("unable to generate jwt id", zap.Error(err))
+		Logger.Error("unable to generate jwt id", zap.Error(err))
 
 		return "", err
 	}
@@ -56,7 +55,7 @@ func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (st
 
 	atoken, err := token.SignedString(c.privateKey)
 	if err != nil {
-		c.logger.Error("could not signed jwt string", zap.Error(err))
+		Logger.Error("could not signed jwt string", zap.Error(err))
 		return "", ServerError("could not signed jwt string", err)
 	}
 	return atoken, nil

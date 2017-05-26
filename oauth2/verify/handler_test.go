@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/plimble/clover/oauth2"
 	"github.com/plimble/clover/oauth2/mocks"
 	"github.com/stretchr/testify/require"
@@ -22,7 +20,7 @@ func TestVerifyHandler(t *testing.T) {
 
 func ValidAccessToken(t *testing.T) {
 	storage := &mocks.Storage{}
-	h := New(storage, zap.L())
+	h := New(storage)
 	res := httptest.NewRecorder()
 
 	form := make(url.Values)
@@ -54,7 +52,7 @@ func ValidAccessToken(t *testing.T) {
 
 func InValidAccessToken(t *testing.T) {
 	storage := &mocks.Storage{}
-	h := New(storage, zap.L())
+	h := New(storage)
 	res := httptest.NewRecorder()
 
 	form := make(url.Values)

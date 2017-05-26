@@ -26,11 +26,10 @@ type TokenHandler struct {
 	grantTypes     map[string]GrantType
 	Storage        oauth2.Storage
 	TokenGenerator oauth2.TokenGenerator
-	logger         *zap.Logger
 }
 
-func New(storage oauth2.Storage, tokenGen oauth2.TokenGenerator, logger *zap.Logger) *TokenHandler {
-	return &TokenHandler{make(map[string]GrantType), storage, tokenGen, logger}
+func New(storage oauth2.Storage, tokenGen oauth2.TokenGenerator) *TokenHandler {
+	return &TokenHandler{make(map[string]GrantType), storage, tokenGen}
 }
 
 func (h *TokenHandler) RegisterGrantType(grantType GrantType) {
@@ -63,7 +62,7 @@ func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.RequestToken(req)
-	h.logger.Info("RequestToken",
+	oauth2.Logger.Info("RequestToken",
 		zap.Any("TokenHandlerRequest", req),
 		zap.Any("TokenHandlerResponse", res),
 		zap.Any("error", err),

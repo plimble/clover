@@ -22,32 +22,31 @@ var (
 // HMACTokenGenerator is responsible for generating and validating challenges.
 type HMACTokenGenerator struct {
 	secret []byte
-	logger *zap.Logger
 }
 
 var b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
-func NewHMACTokenGenerator(secret []byte, logger *zap.Logger) *HMACTokenGenerator {
-	return &HMACTokenGenerator{secret, logger}
+func NewHMACTokenGenerator(secret []byte) *HMACTokenGenerator {
+	return &HMACTokenGenerator{secret}
 }
 
 // Generate generates a token and a matching signature or returns an error.
 // This method implements rfc6819 Section 5.1.4.2.2: Use High Entropy for Secrets.
 func (c *HMACTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (string, error) {
 	if len(c.secret) < SecretLength/2 {
-		c.logger.Error("Secret is not strong enough")
+		Logger.Error("Secret is not strong enough")
 
 		return "", ServerError("Secret is not strong enough", nil)
 	}
 
 	key, err := RandomBytes(TokenEntropy)
 	if err != nil {
-		c.logger.Error("cloud not generate token", zap.Error(err))
+		Logger.Error("cloud not generate token", zap.Error(err))
 		return "", ServerError("cloud not generate token", err)
 	}
 
 	if len(key) < TokenEntropy {
-		c.logger.Error("could not read enough random data for key generation")
+		Logger.Error("could not read enough random data for key generation")
 		return "", ServerError("could not read enough random data for key generation", err)
 	}
 
@@ -55,7 +54,7 @@ func (c *HMACTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (s
 	mac := hmac.New(sha256.New, useSecret)
 	_, err = mac.Write(key)
 	if err != nil {
-		c.logger.Error("hmac write error", zap.Error(err))
+		Logger.Error("hmac write error", zap.Error(err))
 		return "", ServerError("hmac write error", err)
 	}
 
