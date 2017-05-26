@@ -24,7 +24,7 @@ func NewJWTTokenGenerator(privateKey *rsa.PrivateKey, issuer string) *JWTTokenGe
 }
 
 func (c *JWTTokenGenerator) genrateID() (string, error) {
-	bytes := make([]byte, 32)
+	bytes := make([]byte, 10)
 	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
 		return "", err
 	}
@@ -41,7 +41,6 @@ func (c *JWTTokenGenerator) CreateAccessToken(req *CreateAccessTokenRequest) (st
 	now := time.Now().UTC()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"id":         id,
 		"jti":        id,
 		"iss":        c.issuer,
 		"aud":        req.ClientID,

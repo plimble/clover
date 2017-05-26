@@ -13,7 +13,7 @@ type AccessToken struct {
 }
 
 func (a *AccessToken) Valid() bool {
-	return a != nil && a.AccessToken != "" && time.Now().UTC().Unix() > a.Expired
+	return a != nil && a.AccessToken != "" && time.Now().UTC().Unix() < a.Expired
 }
 
 func (a *AccessToken) HasScope(scopes ...string) bool {
@@ -38,7 +38,7 @@ type JWTAccessToken struct {
 }
 
 func (a *JWTAccessToken) Valid() bool {
-	return a != nil && time.Now().UTC().Unix() > int64(a.ExpiresAt)
+	return a != nil && time.Now().UTC().Unix() < int64(a.ExpiresAt)
 }
 
 func (a *JWTAccessToken) HasScope(scopes ...string) bool {

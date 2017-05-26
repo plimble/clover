@@ -1,5 +1,6 @@
 package oauth2
 
+//go:generate mockery -name Storage
 type Storage interface {
 	GetClient(id string) (*Client, error)
 	GetClientWithSecret(id, secret string) (*Client, error)

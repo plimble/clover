@@ -14,5 +14,5 @@ type RefreshToken struct {
 }
 
 func (r *RefreshToken) Valid() bool {
-	return r != nil && r.RefreshToken != "" && time.Now().UTC().Unix() > r.Expired
+	return r != nil && r.RefreshToken != "" && time.Now().UTC().Unix() < r.Expired
 }

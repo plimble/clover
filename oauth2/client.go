@@ -11,7 +11,7 @@ type Client struct {
 	CreatedAt    string   `json:"cat"`
 }
 
-func (c *Client) IsGrantType(grant string) bool {
+func (c *Client) HasGrantType(grant string) bool {
 	for _, g := range c.GrantTypes {
 		if g == grant {
 			return true
@@ -21,12 +21,12 @@ func (c *Client) IsGrantType(grant string) bool {
 	return false
 }
 
-func (c *Client) IsValidRedirectURI(uri string) bool {
-	for _, u := range c.RedirectURIs {
-		if u == uri {
-			return true
-		}
-	}
+// func (c *Client) IsValidRedirectURI(uri string) bool {
+// 	for _, u := range c.RedirectURIs {
+// 		if u == uri {
+// 			return true
+// 		}
+// 	}
 
-	return false
-}
+// 	return false
+// }

@@ -40,7 +40,7 @@ func TestCreateJWTAccessToken(t *testing.T) {
 	}, jwttoken.Extras)
 }
 
-func TestTokenGeneratorCreateAuthorizeCode(t *testing.T) {
+func TestJWTTokenGeneratorCreateAuthorizeCode(t *testing.T) {
 	gen := &JWTTokenGenerator{
 		issuer: "tester",
 	}
@@ -49,7 +49,7 @@ func TestTokenGeneratorCreateAuthorizeCode(t *testing.T) {
 	require.NotEmpty(t, code)
 }
 
-func TestTokenGeneratorCreateRefreshToken(t *testing.T) {
+func TestJWTTokenGeneratorCreateRefreshToken(t *testing.T) {
 	gen := &JWTTokenGenerator{
 		issuer: "tester",
 	}

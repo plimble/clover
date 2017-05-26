@@ -14,5 +14,5 @@ type AuthorizeCode struct {
 }
 
 func (a *AuthorizeCode) Valid() bool {
-	return a != nil && a.Code != "" && time.Now().UTC().Unix() > a.Expired
+	return a != nil && a.Code != "" && time.Now().UTC().Unix() < a.Expired
 }

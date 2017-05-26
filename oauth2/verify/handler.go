@@ -24,7 +24,7 @@ func (h *VerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	atoken := oauth2.GetAccessTokenFromRequest(r)
+	atoken := getAccessTokenFromRequest(r)
 
 	if err := r.ParseForm(); err != nil {
 		oauth2.WriteJsonError(w, ErrParseForm)
@@ -59,11 +59,23 @@ func (h *VerifyHandler) Verify(req *VerifyHandlerRequest) error {
 		return ErrInvalidAccessToken
 	}
 
-	for _, scope := range req.Scopes {
-		if !oauth2.HierarchicScope(scope, at.Scopes) {
-			return ErrInvalidScope
-		}
+	if !at.HasScope(req.Scopes...) {
+		return ErrInvalidScope
 	}
 
 	return nil
+}
+
+func getAccessTokenFromRequest(req *http.Request) string {
+	auth := req.Header.Get("Authorization")
+	split := strings.SplitN(auth, " ", 2)
+	if len(split) != 2 || !strings.EqualFold(split[0], "bearer") {
+		err := req.ParseForm()
+		if err != nil {
+			return ""
+		}
+		return req.Form.Get("access_token")
+	}
+
+	return split[1]
 }

@@ -113,15 +113,15 @@ func (h *TokenHandler) getClient(req *TokenHandlerRequest) (*oauth2.Client, erro
 	if err != nil {
 		err = ErrInvalidClient.WithCause(err)
 		h.Error("unable to get client",
-			zap.String("client_id", client.ID),
-			zap.String("client_secret", client.Secret),
+			zap.String("client_id", req.ClientID),
+			zap.String("client_secret", req.ClientSecret),
 			zap.Any("error", err),
 		)
 
 		return nil, err
 	}
 
-	if !client.IsGrantType(req.GrantType) {
+	if !client.HasGrantType(req.GrantType) {
 		return nil, ErrGrantIsNotAllowed
 	}
 
