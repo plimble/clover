@@ -66,6 +66,7 @@ func (g *PassowrdGrantType) CreateToken(grantData *GrantData, client *oauth2.Cli
 func (g *PassowrdGrantType) createAccessToken(grantData *GrantData, client *oauth2.Client, storage oauth2.Storage, tokenGen oauth2.TokenGenerator) (string, error) {
 	atoken, err := tokenGen.CreateAccessToken(&oauth2.CreateAccessTokenRequest{
 		ClientID:  client.ID,
+		UserID:    grantData.UserID,
 		Scopes:    grantData.Scopes,
 		ExpiresIn: grantData.AccessTokenLifespan,
 		Extras:    grantData.Extras,
@@ -77,6 +78,7 @@ func (g *PassowrdGrantType) createAccessToken(grantData *GrantData, client *oaut
 	at := &oauth2.AccessToken{
 		AccessToken: atoken,
 		ClientID:    client.ID,
+		UserID:      grantData.UserID,
 		Scopes:      grantData.Scopes,
 		Expired:     time.Now().UTC().Add(time.Second * time.Duration(grantData.AccessTokenLifespan)).Unix(),
 		ExpiresIn:   grantData.AccessTokenLifespan,
@@ -96,6 +98,7 @@ func (g *PassowrdGrantType) createRefreshToken(grantData *GrantData, client *oau
 	rt := &oauth2.RefreshToken{
 		RefreshToken: rtoken,
 		ClientID:     client.ID,
+		UserID:       grantData.UserID,
 		Scopes:       grantData.Scopes,
 		Expired:      time.Now().UTC().Add(time.Second * time.Duration(grantData.RefreshTokenLifespan)).Unix(),
 		Extras:       grantData.Extras,
