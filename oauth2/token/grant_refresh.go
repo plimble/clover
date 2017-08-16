@@ -80,6 +80,7 @@ func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *
 		AccessToken: atoken,
 		ClientID:    client.ID,
 		Scopes:      grantData.Scopes,
+		UserID:      grantData.UserID,
 		Expired:     time.Now().UTC().Add(time.Second * time.Duration(grantData.AccessTokenLifespan)).Unix(),
 		ExpiresIn:   grantData.AccessTokenLifespan,
 		Extras:      grantData.Extras,
@@ -96,11 +97,14 @@ func (g *RefreshTokenGrantType) createRefreshToken(grantData *GrantData, client 
 	rtoken := tokenGen.CreateRefreshToken()
 
 	rt := &oauth2.RefreshToken{
-		RefreshToken: rtoken,
-		ClientID:     client.ID,
-		Scopes:       grantData.Scopes,
-		Expired:      time.Now().UTC().Add(time.Second * time.Duration(grantData.RefreshTokenLifespan)).Unix(),
-		Extras:       grantData.Extras,
+		RefreshToken:         rtoken,
+		ClientID:             client.ID,
+		Scopes:               grantData.Scopes,
+		UserID:               grantData.UserID,
+		Expired:              time.Now().UTC().Add(time.Second * time.Duration(grantData.RefreshTokenLifespan)).Unix(),
+		Extras:               grantData.Extras,
+		AccessTokenLifespan:  grantData.AccessTokenLifespan,
+		RefreshTokenLifespan: grantData.RefreshTokenLifespan,
 	}
 
 	if err := storage.SaveRefreshToken(rt); err != nil {

@@ -96,12 +96,14 @@ func (g *PassowrdGrantType) createRefreshToken(grantData *GrantData, client *oau
 	rtoken := tokenGen.CreateRefreshToken()
 
 	rt := &oauth2.RefreshToken{
-		RefreshToken: rtoken,
-		ClientID:     client.ID,
-		UserID:       grantData.UserID,
-		Scopes:       grantData.Scopes,
-		Expired:      time.Now().UTC().Add(time.Second * time.Duration(grantData.RefreshTokenLifespan)).Unix(),
-		Extras:       grantData.Extras,
+		RefreshToken:         rtoken,
+		ClientID:             client.ID,
+		UserID:               grantData.UserID,
+		Scopes:               grantData.Scopes,
+		Expired:              time.Now().UTC().Add(time.Second * time.Duration(grantData.RefreshTokenLifespan)).Unix(),
+		Extras:               grantData.Extras,
+		AccessTokenLifespan:  grantData.AccessTokenLifespan,
+		RefreshTokenLifespan: grantData.RefreshTokenLifespan,
 	}
 
 	if err := storage.SaveRefreshToken(rt); err != nil {
