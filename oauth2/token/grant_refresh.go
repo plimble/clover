@@ -68,6 +68,7 @@ func (g *RefreshTokenGrantType) CreateToken(grantData *GrantData, client *oauth2
 func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *oauth2.Client, storage oauth2.Storage, tokenGen oauth2.TokenGenerator) (string, error) {
 	atoken, err := tokenGen.CreateAccessToken(&oauth2.CreateAccessTokenRequest{
 		ClientID:  client.ID,
+		UserID:    grantData.UserID,
 		Scopes:    grantData.Scopes,
 		ExpiresIn: grantData.AccessTokenLifespan,
 		Extras:    grantData.Extras,
@@ -78,6 +79,7 @@ func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *
 
 	at := &oauth2.AccessToken{
 		AccessToken: atoken,
+		UserID:      grantData.UserID,
 		ClientID:    client.ID,
 		Scopes:      grantData.Scopes,
 		UserID:      grantData.UserID,
