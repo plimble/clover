@@ -82,7 +82,6 @@ func (g *RefreshTokenGrantType) createAccessToken(grantData *GrantData, client *
 		UserID:      grantData.UserID,
 		ClientID:    client.ID,
 		Scopes:      grantData.Scopes,
-		UserID:      grantData.UserID,
 		Expired:     time.Now().UTC().Add(time.Second * time.Duration(grantData.AccessTokenLifespan)).Unix(),
 		ExpiresIn:   grantData.AccessTokenLifespan,
 		Extras:      grantData.Extras,
