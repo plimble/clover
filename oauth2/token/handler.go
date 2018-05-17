@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
 type ProcessFunc func(req *TokenHandlerRequest) (TokenHandlerResponse, error)
@@ -62,11 +61,6 @@ func (h *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.RequestToken(req)
-	oauth2.Logger.Info("RequestToken",
-		zap.Any("TokenHandlerRequest", req),
-		zap.Any("TokenHandlerResponse", res),
-		zap.Any("error", err),
-	)
 	if err != nil {
 		oauth2.WriteJsonError(w, err)
 		return
