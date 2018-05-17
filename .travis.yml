@@ -7,8 +7,8 @@ go:
 
 install:
    - go get github.com/mattn/goveralls golang.org/x/tools/cmd/cover github.com/pierrre/gotestcover github.com/Masterminds/glide
-   - glide install
+   - dep ensure
 
 script:
-  - gotestcover -coverprofile="cover.out" -race -covermode="count" $(glide novendor)
+  - gotestcover -coverprofile="cover.out" -race -covermode="count" ./...
   - goveralls -coverprofile="cover.out"
