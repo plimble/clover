@@ -77,8 +77,9 @@ func ClaimJWTAccessToken(publicKey *rsa.PublicKey, accesstoken string) (*JWTAcce
 
 		return publicKey, nil
 	})
+
 	if err != nil || !jwttoken.Valid {
-		return nil, errors.New("Invalid token")
+		return nil, errors.New("Invalid token: " + err.Error())
 	}
 
 	claims := jwttoken.Claims.(jwt.MapClaims)

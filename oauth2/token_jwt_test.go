@@ -37,6 +37,29 @@ func TestCreateJWTAccessToken(t *testing.T) {
 	}, jwttoken.Extras)
 }
 
+func TestCreateJWTAccessTokenExpired(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 1024)
+
+	gen := NewJWTTokenGenerator(privateKey)
+
+	token, err := gen.CreateAccessToken(&CreateAccessTokenRequest{
+		ClientID:  "c1",
+		UserID:    "u1",
+		Scopes:    []string{"s1", "s2"},
+		ExpiresIn: -10,
+		Extras: map[string]interface{}{
+			"e1": "val",
+			"e2": "val",
+		},
+	})
+
+	require.NoError(t, err)
+
+	jwttoken, err := ClaimJWTAccessToken(&privateKey.PublicKey, token)
+	require.Error(t, err)
+	require.Nil(t, jwttoken)
+}
+
 func TestJWTTokenGeneratorCreateAuthorizeCode(t *testing.T) {
 	gen := NewJWTTokenGenerator(nil)
 
