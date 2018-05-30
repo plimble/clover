@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/plimble/clover/oauth2"
-	"go.uber.org/zap"
 )
 
 type VerifyHandlerRequest struct {
@@ -40,10 +39,7 @@ func (h *VerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.Verify(req)
-	oauth2.Logger.Info("Verify AccessToken",
-		zap.Any("VerifyHandlerRequest", req),
-		zap.Any("error", err),
-	)
+
 	if err != nil {
 		oauth2.WriteJsonError(w, err)
 		return
